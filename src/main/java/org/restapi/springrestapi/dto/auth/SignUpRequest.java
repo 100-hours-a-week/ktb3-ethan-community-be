@@ -18,5 +18,6 @@ public record SignUpRequest (
     @Schema(description = "닉네임", example = "test001")
     String nickname,
 
+    @Schema(description = "프로필 이미지 url", example = "http://localhost:8080/upload/post/98cecd5f-0a42-41d4-ac46-2e6af8fc4851.jpg")
     String profileImageUrl
 ) {}

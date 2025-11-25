@@ -40,3 +40,8 @@ logging:
     org.springframework.web: DEBUG
     org.springframework.security: DEBUG
     io.jsonwebtoken: DEBUG
+
+springdoc:
+  swagger-ui:
+    csrf:
+      enabled: true
