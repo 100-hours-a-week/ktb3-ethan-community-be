@@ -26,15 +26,15 @@ public class SwaggerConfig {
 				new Server().url("http://localhost:8080").description("개발 서버")
 			))
 			.components(new Components()
-				.addSecuritySchemes("access_token",
+				.addSecuritySchemes("Authorization",
 					new SecurityScheme()
-						.name("access_token")
+						.name("Authorization")
 						.type(SecurityScheme.Type.APIKEY)
 						.in(SecurityScheme.In.HEADER)
-						.description("개발용 인증 토큰: 사용자 Public ID 주입 헤더"))
+						.description("사용자 엑세스 토큰 주입 헤더(Bearer {access_token})"))
 			)
 			.addSecurityItem(new SecurityRequirement().addList(
-				"access_token"
+				"Authorization"
 			));
 	}
 }

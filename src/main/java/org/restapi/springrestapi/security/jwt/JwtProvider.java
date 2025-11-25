@@ -7,7 +7,11 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.restapi.springrestapi.finder.UserFinder;
+import org.restapi.springrestapi.model.User;
+import org.restapi.springrestapi.security.CustomUserDetails;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -23,6 +27,7 @@ import java.util.UUID;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class JwtProvider {
     // Header
     private static final String ACCESS_HEADER = "Authorization";
@@ -41,15 +46,11 @@ public class JwtProvider {
     /*
         문자열 상수 너무 많은가? 별도의 중첩 클래스로 분류해야하는게 좋을까
      */
-
+    private final UserFinder userFinder;
     private final JwtProperties props;
 
     private SecretKey accessKey;
     private SecretKey refreshKey;
-
-    public JwtProvider(JwtProperties props) {
-        this.props = props;
-    }
 
     @PostConstruct
     void init() {
@@ -119,7 +120,7 @@ public class JwtProvider {
             구체적인 실패 사유(서명 불일치, 토큰 형식, 만료 등)를 반환하면, 공격자도 알게된다.
             외부 응답은 단순하게, 내부 로그는 남기는 방향으로 가는게 좋아보인다.
              */
-            log.error("토큰 유효성 검증 실패: " + e.getMessage());
+            log.warn("토큰 유효성 검증 실패: " + e.getMessage());
             return false;
         }
     }
@@ -127,7 +128,9 @@ public class JwtProvider {
 
     public Authentication getAuthentication(String accessToken) {
         Long userId = getUserIdFromAccess(accessToken);
-        return new UsernamePasswordAuthenticationToken(userId, null, Collections.emptyList());
+        User user = userFinder.findByIdOrAuthThrow(userId);
+        CustomUserDetails customUserDetails = new CustomUserDetails(user);
+        return new UsernamePasswordAuthenticationToken(customUserDetails, null, Collections.emptyList());
     }
 
     /*

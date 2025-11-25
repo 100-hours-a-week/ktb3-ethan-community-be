@@ -19,7 +19,7 @@ public class UserFinderImpl implements UserFinder {
 
 	@Override
 	public User findById(Long id) {
-		return userRepository.findById(id)
+		return userRepository.findByIdAndDeletedAtIsNull(id)
 			.orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));
 	}
 
@@ -47,6 +47,12 @@ public class UserFinderImpl implements UserFinder {
     public User findByEmail(String email) {
         return userRepository.findByEmailAndDeletedAtIsNull(email).orElseThrow(
                 ()-> new AppException(UserErrorCode.USER_NOT_FOUND));
+    }
+
+    @Override
+    public User findByIdOrAuthThrow(Long id) {
+        return userRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(()->new AppException(AuthErrorCode.UNAUTHORIZED));
     }
 
     @Override
