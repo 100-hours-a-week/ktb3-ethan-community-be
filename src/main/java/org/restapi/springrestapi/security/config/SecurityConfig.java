@@ -1,4 +1,4 @@
-package org.restapi.springrestapi.security;
+package org.restapi.springrestapi.security.config;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,8 +29,9 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        CsrfTokenRequestAttributeHandler requestHandler =
-                new CsrfTokenRequestAttributeHandler();
+
+		CsrfTokenRequestAttributeHandler requestHandler =
+			new CsrfTokenRequestAttributeHandler();
         requestHandler.setCsrfRequestAttributeName(null);
 
         http
@@ -47,9 +48,12 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/hc").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/hc", "/csrf").permitAll()
                         .requestMatchers("/upload/*").permitAll()
-                        .requestMatchers("/auth/login", "/auth/signup").permitAll()
+                        .requestMatchers(
+							"/auth/login",
+							"/auth/signup"
+						).permitAll()
                         .requestMatchers(
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",

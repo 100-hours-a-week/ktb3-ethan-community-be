@@ -1,4 +1,4 @@
-package org.restapi.springrestapi.security;
+package org.restapi.springrestapi.security.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -8,7 +8,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 
 @Configuration
 @RequiredArgsConstructor
-public class SecurityBeansConfig {
+public class AuthenticationManagerConfig {
 
     @Bean
     public AuthenticationManager authenticationManager(
