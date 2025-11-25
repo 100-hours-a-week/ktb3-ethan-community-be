@@ -12,7 +12,7 @@ public enum SuccessCode {
 	PATCH_SUCCESS(HttpStatus.OK, "resource_patch"),
 	REGISTER_SUCCESS(HttpStatus.CREATED, "resource_created"),
 
-	LOGIN_SUCCESS(HttpStatus.OK, "login_success")
+    AUTH_REQUEST_SUCCESS(HttpStatus.OK, "인증 관련 요청 처리 완료")
 	;
 
 	private final HttpStatus status;

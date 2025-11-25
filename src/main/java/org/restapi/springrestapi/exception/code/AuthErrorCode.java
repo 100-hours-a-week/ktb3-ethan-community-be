@@ -8,7 +8,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum AuthErrorCode implements ErrorCode {
-	INVALID_EMAIL_OR_PASSWORD(HttpStatus.UNAUTHORIZED, "invalid_email_or_password"),
+	INVALID_EMAIL_OR_PASSWORD(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
 
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED,"사용자 인증이 필요합니다."),
     ACCESS_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "액세스 토큰이 만료되었습니다."),

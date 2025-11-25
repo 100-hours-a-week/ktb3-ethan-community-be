@@ -1,6 +1,7 @@
 package org.restapi.springrestapi.finder;
 
 import org.restapi.springrestapi.exception.AppException;
+import org.restapi.springrestapi.exception.code.AuthErrorCode;
 import org.restapi.springrestapi.exception.code.UserErrorCode;
 import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.repository.UserRepository;
@@ -29,7 +30,7 @@ public class UserFinderImpl implements UserFinder {
 
     @Override
 	public boolean existsById(Long id) {
-		return userRepository.existsById(id);
+		return userRepository.existsByIdAndDeletedAtIsNull(id);
 	}
 
 	@Override
@@ -46,6 +47,13 @@ public class UserFinderImpl implements UserFinder {
     public User findByEmail(String email) {
         return userRepository.findByEmailAndDeletedAtIsNull(email).orElseThrow(
                 ()-> new AppException(UserErrorCode.USER_NOT_FOUND));
+    }
+
+    @Override
+    public User findByEmailOrAuthThrow(String email) {
+        return userRepository.findByEmailAndDeletedAtIsNull(email).orElseThrow(
+                ()-> new AppException(AuthErrorCode.INVALID_EMAIL_OR_PASSWORD)
+        );
     }
 
 }

@@ -5,12 +5,13 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
-import org.restapi.springrestapi.config.PasswordEncoder;
+
+import org.restapi.springrestapi.dto.auth.SignUpRequest;
 import org.restapi.springrestapi.dto.user.PatchProfileRequest;
-import org.restapi.springrestapi.dto.user.RegisterUserRequest;
 
 import lombok.Builder;
 import lombok.Getter;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -55,14 +56,14 @@ public class User {
      */
 
     public static User from(
-		RegisterUserRequest command,
-		PasswordEncoder passwordEncoder
+        SignUpRequest signUpRequest,
+        PasswordEncoder passwordEncoder
 	) {
 		return User.builder()
-                .nickname(command.getNickname())
-                .email(command.getEmail())
-                .password(passwordEncoder.encode(command.getPassword()))
-                .profileImageUrl(command.getProfileImageUrl())
+                .nickname(signUpRequest.nickname())
+                .email(signUpRequest.email())
+                .password(passwordEncoder.encode(signUpRequest.password()))
+                .profileImageUrl(signUpRequest.profileImageUrl())
                 .joinAt(LocalDateTime.now())
                 .build();
 	}

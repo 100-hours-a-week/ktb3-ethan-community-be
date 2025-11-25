@@ -3,15 +3,14 @@ package org.restapi.springrestapi.controller;
 import org.restapi.springrestapi.dto.user.ChangePasswordRequest;
 import org.restapi.springrestapi.dto.user.PatchProfileRequest;
 import org.restapi.springrestapi.dto.user.PatchProfileResponse;
-import org.restapi.springrestapi.dto.user.RegisterUserRequest;
-import org.restapi.springrestapi.dto.user.RegisterUserResponse;
 import org.restapi.springrestapi.dto.user.UserProfileResult;
 import org.restapi.springrestapi.exception.code.SuccessCode;
-import org.restapi.springrestapi.security.AuthContext;
+import org.restapi.springrestapi.security.CustomUserDetails;
 import org.restapi.springrestapi.service.user.UserService;
 import org.restapi.springrestapi.common.APIResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -34,22 +33,7 @@ import lombok.RequiredArgsConstructor;
 @Tag(name = "Users", description = "사용자 관련 API")
 public class UserController {
 	private final UserService userService;
-	private final AuthContext authContext;
 
-	@Operation(summary = "회원 가입", description = "신규 사용자를 등록합니다.")
-	@ApiResponses({
-		@ApiResponse(responseCode = "201", description = "회원 가입 성공"),
-		@ApiResponse(responseCode = "409", description = "이메일 또는 닉네임 중복"),
-		@ApiResponse(responseCode = "400", description = "요청 필드 유효성 실패")
-	})
-	@PostMapping
-	public ResponseEntity<APIResponse<RegisterUserResponse>> register(
-		@Valid @RequestBody RegisterUserRequest request
-	) {
-		final Long id = userService.register(request);
-		return ResponseEntity.status(SuccessCode.REGISTER_SUCCESS.getStatus())
-				.body(APIResponse.ok(SuccessCode.REGISTER_SUCCESS, new RegisterUserResponse(id)));
-	}
 	@Operation(summary = "사용자 프로필 조회", description = "사용자 ID로 프로필을 조회합니다.")
 	@ApiResponses({
 		@ApiResponse(responseCode = "200", description = "조회 성공"),
@@ -72,9 +56,10 @@ public class UserController {
 	})
 	@PatchMapping
 	public ResponseEntity<APIResponse<PatchProfileResponse>> updateProfile(
-		@Valid @RequestBody PatchProfileRequest request
+		@Valid @RequestBody PatchProfileRequest request,
+        @AuthenticationPrincipal CustomUserDetails user
 	) {
-		final Long id = authContext.requiredUserId();
+		final Long id = user.getId();
 		userService.updateProfile(id, request);
 		return ResponseEntity.ok(APIResponse.ok(
 			SuccessCode.PATCH_SUCCESS, PatchProfileResponse.from(request)));
@@ -88,9 +73,10 @@ public class UserController {
 	})
 	@PatchMapping("/password")
 	public ResponseEntity<APIResponse<Void>> changePassword(
-		@Valid @RequestBody ChangePasswordRequest request
+		@Valid @RequestBody ChangePasswordRequest request,
+        @AuthenticationPrincipal CustomUserDetails user
 	) {
-		final Long id = authContext.requiredUserId();
+		final Long id = user.getId();
 		userService.changePassword(id, request);
 		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
 	}
@@ -101,8 +87,10 @@ public class UserController {
 		@ApiResponse(responseCode = "401", description = "인증 필요")
 	})
 	@DeleteMapping
-	public ResponseEntity<Void> deleteUser() {
-		final Long id = authContext.requiredUserId();
+	public ResponseEntity<Void> deleteUser(
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+		final Long id = user.getId();
 		userService.deleteUser(id);
 		return ResponseEntity.noContent().build();
 	}

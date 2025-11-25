@@ -9,10 +9,11 @@ import org.restapi.springrestapi.dto.post.PostResult;
 import org.restapi.springrestapi.dto.post.RegisterPostRequest;
 import org.restapi.springrestapi.dto.post.PostSummary;
 import org.restapi.springrestapi.exception.code.SuccessCode;
-import org.restapi.springrestapi.security.AuthContext;
+import org.restapi.springrestapi.security.CustomUserDetails;
 import org.restapi.springrestapi.service.post.PostLikeService;
 import org.restapi.springrestapi.service.post.PostService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -37,8 +38,6 @@ import lombok.RequiredArgsConstructor;
 public class PostController {
 	private final PostService postService;
     private final PostLikeService postLikeService;
-	private final AuthContext authContext;
-
 
     @Operation(summary = "게시글 등록", description = "현재 로그인 사용자가 새 게시글을 등록합니다.")
 	@ApiResponses({
@@ -48,9 +47,10 @@ public class PostController {
 	})
 	@PostMapping
 	public ResponseEntity<APIResponse<PostSummary>> registerPost(
-		@Valid @RequestBody RegisterPostRequest request
+		@Valid @RequestBody RegisterPostRequest request,
+        @AuthenticationPrincipal CustomUserDetails user
 	) {
-		final Long userId = authContext.requiredUserId();
+		final Long userId = user.getId();
 
 		return ResponseEntity.status(SuccessCode.REGISTER_SUCCESS.getStatus())
 			.body(APIResponse.ok(SuccessCode.REGISTER_SUCCESS, postService.registerPost(userId, request)));
@@ -77,9 +77,10 @@ public class PostController {
 	@GetMapping("/{id}")
 	public ResponseEntity<APIResponse<PostResult>> getPostDetail(
 		@PathVariable Long id,
-        HttpServletRequest request
+        HttpServletRequest request,
+        @AuthenticationPrincipal CustomUserDetails user
 	) {
-		final Long userId = authContext.currentUserIdOrNull();
+		final Long userId = user.getId();
 
 		return ResponseEntity.ok()
 			.body(APIResponse.ok(SuccessCode.GET_SUCCESS, postService.getPost(request, userId, id)));
@@ -95,9 +96,10 @@ public class PostController {
 	@PatchMapping("/{id}")
 	public ResponseEntity<APIResponse<PostResult>> patchPost(
 		@PathVariable Long id,
-		@Valid @RequestBody PatchPostRequest request
+		@Valid @RequestBody PatchPostRequest request,
+        @AuthenticationPrincipal CustomUserDetails user
 	) {
-		final Long userId = authContext.requiredUserId();
+		final Long userId = user.getId();
 		return ResponseEntity.ok()
 			.body(APIResponse.ok(SuccessCode.PATCH_SUCCESS, postService.updatePost(userId, id, request)));
 	}
@@ -110,9 +112,10 @@ public class PostController {
 	})
 	@PatchMapping("/{id}/like")
 	public ResponseEntity<APIResponse<PatchPostLikeResult>> updatePostLike(
-		@PathVariable Long id
+		@PathVariable Long id,
+        @AuthenticationPrincipal CustomUserDetails user
 	) {
-		final Long userId = authContext.requiredUserId();
+		final Long userId = user.getId();
 		return ResponseEntity.ok()
 			.body(APIResponse.ok(SuccessCode.PATCH_SUCCESS, postLikeService.togglePostLike(userId, id)));
 	}
@@ -126,9 +129,10 @@ public class PostController {
 	})
 	@DeleteMapping("/{id}")
 	public ResponseEntity<APIResponse<Void>> deletePost(
-		@PathVariable Long id
+		@PathVariable Long id,
+        @AuthenticationPrincipal CustomUserDetails user
 	) {
-		final Long userId = authContext.requiredUserId();
+		final Long userId = user.getId();
 		postService.deletePost(userId, id);
 		return ResponseEntity.noContent().build();
 	}

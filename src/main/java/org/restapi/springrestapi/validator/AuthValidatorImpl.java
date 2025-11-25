@@ -1,10 +1,10 @@
 package org.restapi.springrestapi.validator;
 
 import lombok.RequiredArgsConstructor;
-import org.restapi.springrestapi.config.PasswordEncoder;
 import org.restapi.springrestapi.exception.AppException;
 import org.restapi.springrestapi.exception.code.AuthErrorCode;
 import org.restapi.springrestapi.exception.code.UserErrorCode;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 

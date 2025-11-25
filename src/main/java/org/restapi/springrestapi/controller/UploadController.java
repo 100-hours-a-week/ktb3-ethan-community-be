@@ -2,11 +2,12 @@ package org.restapi.springrestapi.controller;
 
 import org.restapi.springrestapi.dto.upload.UploadImageResponse;
 import org.restapi.springrestapi.exception.code.SuccessCode;
-import org.restapi.springrestapi.security.AuthContext;
 import org.restapi.springrestapi.common.APIResponse;
 import org.restapi.springrestapi.common.util.FileStorageService;
+import org.restapi.springrestapi.security.CustomUserDetails;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,7 +23,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Tag(name = "Upload", description = "파일 업로드 API")
 public class UploadController {
-	private final AuthContext auth;
 	private final FileStorageService fileStorageService;
 
 	@Operation(summary = "사용자 프로필 이미지 업로드 api", description = "사용자의 이미지를 업로드하고 URL을 반환합니다.")
@@ -57,7 +57,6 @@ public class UploadController {
     public ResponseEntity<APIResponse<UploadImageResponse>> uploadPostImage(
             @RequestPart("image") MultipartFile image
     ) {
-        auth.requiredUserId();
         String url = fileStorageService.savePostImage(image);
 
         return ResponseEntity.status(201)

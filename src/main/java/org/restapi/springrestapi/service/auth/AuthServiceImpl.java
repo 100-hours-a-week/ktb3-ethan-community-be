@@ -1,11 +1,18 @@
 package org.restapi.springrestapi.service.auth;
 
-import org.restapi.springrestapi.dto.auth.LoginResult;
-import org.restapi.springrestapi.dto.user.LoginRequest;
+import org.restapi.springrestapi.dto.auth.*;
 import org.restapi.springrestapi.finder.UserFinder;
 import org.restapi.springrestapi.model.User;
 
-import org.restapi.springrestapi.validator.AuthValidator;
+import org.restapi.springrestapi.repository.UserRepository;
+import org.restapi.springrestapi.security.CustomUserDetails;
+import org.restapi.springrestapi.security.jwt.JwtProvider;
+import org.restapi.springrestapi.validator.UserValidator;
+import org.springframework.http.ResponseCookie;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -13,17 +20,60 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class AuthServiceImpl implements AuthService {
-    private final UserFinder userFinder;
-    private final AuthValidator authValidator;
+    private final AuthenticationManager authenticationManager;
+    private final JwtProvider jwtProvider;
+    private final PasswordEncoder passwordEncoder;
 
-	@Override
+    private final UserValidator userValidator;
+    private final UserRepository userRepository;
+    private final UserFinder userFinder;
+
+    @Override
     @Transactional(readOnly = true)
 	public LoginResult login(LoginRequest loginRequest) {
-        User user = userFinder.findByEmail(loginRequest.email());
+        Authentication auth = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password())
+        );
 
-        authValidator.validateSamePassword(loginRequest.password(), user.getPassword());
+        CustomUserDetails principal = (CustomUserDetails) auth.getPrincipal();
+        User user = principal.user();
 
-		return LoginResult.from(user, user.getId().toString());
-	}
+        String access = jwtProvider.createAccessToken(user.getId());
+        String refresh = jwtProvider.createRefreshToken(user.getId());
+
+        ResponseCookie refreshCookie = jwtProvider.createRefreshCookie(refresh);
+
+        return LoginResult.from(user, access, refreshCookie);
+    }
+
+    @Override
+    public LoginResult signup(SignUpRequest signUpRequest) {
+        userValidator.validateSignUpUser(signUpRequest.email(), signUpRequest.nickname());
+
+        User user = User.from(signUpRequest, passwordEncoder);
+
+        User saved = userRepository.save(user);
+
+        String accessToken = jwtProvider.createAccessToken(saved.getId());
+        String refresh = jwtProvider.createRefreshToken(saved.getId());
+
+        ResponseCookie refreshCookie = jwtProvider.createRefreshCookie(refresh);
+
+        return LoginResult.from(saved, accessToken, refreshCookie);
+    }
+
+
+    @Override
+    public RefreshTokenResult refresh(Long userId) {
+        userValidator.validateUserExists(userId);
+
+        String newAccess = jwtProvider.createAccessToken(userId);
+
+        String newRefresh = jwtProvider.createRefreshToken(userId);
+        ResponseCookie newRefreshCookie = jwtProvider.createRefreshCookie(newRefresh);
+
+        return new RefreshTokenResult(newAccess, newRefreshCookie);
+    }
 }

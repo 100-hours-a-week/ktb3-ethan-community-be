@@ -29,4 +29,6 @@ public interface UserFinder {
 	boolean existsByNickName(String nickName);
 
     User findByEmail(String email);
+
+    User findByEmailOrAuthThrow(String email);
 }

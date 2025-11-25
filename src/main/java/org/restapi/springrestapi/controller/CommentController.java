@@ -6,10 +6,11 @@ import org.restapi.springrestapi.dto.comment.CommentResult;
 import org.restapi.springrestapi.dto.comment.PatchCommentRequest;
 import org.restapi.springrestapi.dto.comment.RegisterCommentRequest;
 import org.restapi.springrestapi.exception.code.SuccessCode;
-import org.restapi.springrestapi.security.AuthContext;
+import org.restapi.springrestapi.security.CustomUserDetails;
 import org.restapi.springrestapi.service.comment.CommentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -33,7 +34,6 @@ import lombok.RequiredArgsConstructor;
 @Tag(name = "Comments", description = "댓글 관련 API")
 public class CommentController {
 	private final CommentService commentService;
-	private final AuthContext authContext;
 
 	@Operation(summary = "댓글 등록", description = "특정 게시글에 댓글을 등록합니다.")
 	@ApiResponses({
@@ -44,9 +44,10 @@ public class CommentController {
 	@PostMapping("/{postId}/comments")
 	public ResponseEntity<APIResponse<CommentResult>> createComment(
 		@PathVariable Long postId,
-		@RequestBody RegisterCommentRequest request
+		@RequestBody RegisterCommentRequest request,
+        @AuthenticationPrincipal CustomUserDetails user
 	) {
-		final Long userId = authContext.requiredUserId();
+		final Long userId = user.getId();
 		return ResponseEntity.status(HttpStatus.CREATED)
 			.body(APIResponse.ok(SuccessCode.REGISTER_SUCCESS, commentService.registerComment(userId, request, postId)));
 	}
@@ -76,9 +77,10 @@ public class CommentController {
 	public ResponseEntity<APIResponse<CommentResult>> patchComment(
 		@PathVariable Long postId,
 		@PathVariable Long id,
-		@Valid @RequestBody PatchCommentRequest request
+		@Valid @RequestBody PatchCommentRequest request,
+        @AuthenticationPrincipal CustomUserDetails user
 	) {
-		final Long userId = authContext.requiredUserId();
+		final Long userId = user.getId();
 		return ResponseEntity.ok()
 			.body(APIResponse.ok(SuccessCode.PATCH_SUCCESS, commentService.updateComment(userId, request, postId, id)));
 	}
@@ -92,9 +94,10 @@ public class CommentController {
 	@DeleteMapping("/{postId}/comments/{id}")
 	public ResponseEntity<Void> deleteComment(
 		@PathVariable Long postId,
-		@PathVariable Long id
+		@PathVariable Long id,
+        @AuthenticationPrincipal CustomUserDetails user
 	) {
-		final Long userId = authContext.requiredUserId();
+		final Long userId = user.getId();
 		commentService.deleteComment(userId, id, postId);
 		return ResponseEntity.noContent().build();
 	}

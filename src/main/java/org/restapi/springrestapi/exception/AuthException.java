@@ -2,8 +2,8 @@ package org.restapi.springrestapi.exception;
 
 import lombok.Getter;
 import org.restapi.springrestapi.exception.code.ErrorCode;
+import org.springframework.security.core.AuthenticationException;
 
-import javax.naming.AuthenticationException;
 
 @Getter
 public class AuthException extends AuthenticationException {

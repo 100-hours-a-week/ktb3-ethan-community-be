@@ -1,40 +1,89 @@
 package org.restapi.springrestapi.controller;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import org.restapi.springrestapi.common.APIResponse;
-import org.restapi.springrestapi.dto.auth.LoginResult;
-import org.restapi.springrestapi.dto.user.LoginRequest;
+import org.restapi.springrestapi.dto.auth.*;
 import org.restapi.springrestapi.exception.code.SuccessCode;
+import org.restapi.springrestapi.security.CustomUserDetails;
+import org.restapi.springrestapi.security.jwt.JwtProvider;
 import org.restapi.springrestapi.service.auth.AuthService;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/users/auth")
-@Tag(name = "Auth", description = "인증 API")
+@RequestMapping("/auth")
+@Tag(name = "Auth", description = "인증 관련 API")
 public class AuthController {
 	private final AuthService authService;
 
-	@Operation(summary = "사용자 로그인(토큰 발급)", description = "사용자 로그인을 처리하고, 토큰(userId)을 발급합니다.")
-	@ApiResponses({
-		@ApiResponse(responseCode = "200", description = "로그인\n 성공"),
-		@ApiResponse(responseCode = "400", description = "email 또는 password 누락"),
-		@ApiResponse(responseCode = "401", description = "잘못된 email 또는 password 형식")
-	})
-	@PostMapping("/token")
-	public ResponseEntity<APIResponse<LoginResult>> login(
-		@RequestBody LoginRequest request
+    @Operation(summary = "로그인", description = "로그인 후 사용자/인증 정보 반환")
+	@PostMapping("/login")
+	public ResponseEntity<APIResponse<LoginResponse>> login(
+		@RequestBody LoginRequest req
 	) {
-		return ResponseEntity.ok(APIResponse.ok(SuccessCode.LOGIN_SUCCESS, authService.login(request)));
+        LoginResult loginResult = authService.login(req);
+        return ResponseEntity.status(SuccessCode.GET_SUCCESS.getStatus())
+                .header(HttpHeaders.SET_COOKIE, loginResult.refreshCookie().toString())
+                .body(APIResponse.ok(SuccessCode.GET_SUCCESS, LoginResponse.from(loginResult)));
 	}
 
+    @Operation(summary = "회원가입", description = "회원가입 후 사용자/인증 정보 반환")
+    @PostMapping("/signup")
+    public ResponseEntity<APIResponse<LoginResponse>> signup(
+            @RequestBody SignUpRequest req
+    ) {
+        LoginResult loginResult = authService.signup(req);
+        return ResponseEntity.status(SuccessCode.AUTH_REQUEST_SUCCESS.getStatus())
+                .header(HttpHeaders.SET_COOKIE, loginResult.refreshCookie().toString())
+                .body(APIResponse.ok(
+                        SuccessCode.AUTH_REQUEST_SUCCESS,
+                        LoginResponse.from(loginResult))
+                );
+    }
+
+
+    @Operation(summary = "엑세스 토큰 재발급", description = "리프레쉬 토큰으로 엑세스 토큰 재발급")
+    @PostMapping("/refresh")
+    public ResponseEntity<APIResponse<TokenResponse>> refresh(
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        RefreshTokenResult refreshResult = authService.refresh(user.user().getId());
+
+        return ResponseEntity.status(SuccessCode.AUTH_REQUEST_SUCCESS.getStatus())
+                .header(HttpHeaders.SET_COOKIE, refreshResult.refreshCookie().toString())
+                .body(APIResponse.ok(
+                        SuccessCode.AUTH_REQUEST_SUCCESS,
+                        new TokenResponse(refreshResult.accessToken())
+                ));
+    }
+
+
+    @Operation(summary = "로그아웃", description = "로그아웃 후 리프레쉬 토큰 삭제")
+    @PostMapping("/logout")
+    public ResponseEntity<APIResponse<LoginResult>> logout(
+            HttpServletResponse res
+    ) {
+        _deleteRefreshTokenCookie(res);
+        return ResponseEntity.noContent().build();
+    }
+
+    private void _deleteRefreshTokenCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie(JwtProvider.REFRESH_COOKIE, null);
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
+    }
 }

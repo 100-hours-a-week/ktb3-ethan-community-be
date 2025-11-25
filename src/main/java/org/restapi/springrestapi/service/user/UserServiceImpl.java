@@ -1,15 +1,14 @@
 package org.restapi.springrestapi.service.user;
 
-import org.restapi.springrestapi.config.PasswordEncoder;
 import org.restapi.springrestapi.dto.user.ChangePasswordRequest;
 import org.restapi.springrestapi.dto.user.PatchProfileRequest;
-import org.restapi.springrestapi.dto.user.RegisterUserRequest;
 import org.restapi.springrestapi.dto.user.UserProfileResult;
 import org.restapi.springrestapi.finder.UserFinder;
 import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.repository.UserRepository;
 import org.restapi.springrestapi.validator.AuthValidator;
 import org.restapi.springrestapi.validator.UserValidator;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -24,15 +23,6 @@ public class UserServiceImpl implements UserService {
 	private final PasswordEncoder passwordEncoder;
 	private final UserValidator userValidator;
     private final AuthValidator authValidator;
-
-    @Override
-	public Long register(RegisterUserRequest command) {
-		userValidator.validateRegisterUser(command.getEmail(), command.getPassword());
-
-		User user = User.from(command, passwordEncoder);
-
-		return userRepository.save(user).getId();
-	}
 
 	@Override
 	public UserProfileResult getUserProfile(Long id) {
