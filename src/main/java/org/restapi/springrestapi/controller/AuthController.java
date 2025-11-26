@@ -1,6 +1,7 @@
 package org.restapi.springrestapi.controller;
 
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.restapi.springrestapi.common.APIResponse;
 import org.restapi.springrestapi.dto.auth.*;
@@ -55,10 +56,8 @@ public class AuthController {
 
     @Operation(summary = "엑세스 토큰 재발급", description = "리프레쉬 토큰으로 엑세스 토큰 재발급")
     @PostMapping("/refresh")
-    public ResponseEntity<APIResponse<TokenResponse>> refresh(
-            @AuthenticationPrincipal CustomUserDetails user
-    ) {
-        RefreshTokenResult refreshResult = authService.refresh(user.user().getId());
+    public ResponseEntity<APIResponse<TokenResponse>> refresh(HttpServletRequest request) {
+        RefreshTokenResult refreshResult = authService.refresh(request);
 
         return ResponseEntity.status(SuccessCode.AUTH_REQUEST_SUCCESS.getStatus())
                 .header(HttpHeaders.SET_COOKIE, refreshResult.refreshCookie().toString())
@@ -67,7 +66,6 @@ public class AuthController {
                         new TokenResponse(refreshResult.accessToken())
                 ));
     }
-
 
     @Operation(summary = "로그아웃", description = "로그아웃 후 리프레쉬 토큰 삭제")
     @PostMapping("/logout")

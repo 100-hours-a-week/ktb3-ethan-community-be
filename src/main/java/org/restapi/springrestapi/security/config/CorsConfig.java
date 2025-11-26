@@ -17,7 +17,7 @@ public class CorsConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // 허용할 출처 설정(vscode live server 5500, vite react local server 5173)
-        configuration.setAllowedOrigins(List.of("http://localhost:5500", "http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of("http://127.0.0.1:5500","http://localhost:5500", "http://localhost:5173"));
 
         // 허용할 HTTP 메서드 설정
         configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));

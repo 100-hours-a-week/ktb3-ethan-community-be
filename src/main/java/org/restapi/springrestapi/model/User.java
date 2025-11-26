@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.Where;
 
 import org.restapi.springrestapi.dto.auth.SignUpRequest;
@@ -22,8 +23,8 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Builder(toBuilder = true)
-@SQLDelete(sql = "UPDATE `user` SET deleted_at = NOW() WHERE id = ?")
-@Where(clause = "deleted_at IS NULL")
+@SQLDelete(sql = "UPDATE user SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 public class User {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -83,8 +84,4 @@ public class User {
 	public void updatePassword(String password, PasswordEncoder passwordEncoder) {
 		this.password = passwordEncoder.encode(password);
 	}
-
-    public void softDelete() {
-        this.deletedAt = LocalDateTime.now();
-    }
 }

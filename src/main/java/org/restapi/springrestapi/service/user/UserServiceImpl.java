@@ -51,7 +51,6 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public void deleteUser(Long id) {
-        User user = userFinder.findById(id);
-        user.softDelete();
+        userRepository.deleteById(id);
 	}
 }

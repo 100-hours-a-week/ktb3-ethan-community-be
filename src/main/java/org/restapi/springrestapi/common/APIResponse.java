@@ -15,19 +15,20 @@ import org.springframework.http.HttpStatus;
 @Builder
 public class APIResponse<T> {
 	private String message;
+    private String code;
 	private T Data;
 
 	public static <T> APIResponse<T> ok(SuccessCode code, T data) {
-		return new APIResponse<>(code.getMessage(), data);
+		return new APIResponse<>(code.getMessage(), code.getCode(), data);
 	}
 
     public static APIResponse<?> error(ErrorCode code) {
-        return new APIResponse<>(code.getMessage(), Map.of());
+        return new APIResponse<>(code.getMessage(), code.getCode(), Map.of());
     }
     public static APIResponse<?> error(String message) {
-        return new APIResponse<>(message, Map.of());
+        return new APIResponse<>(message, HttpStatus.BAD_REQUEST.getReasonPhrase(), Map.of());
     }
     public static APIResponse<?> error(HttpStatus status) {
-        return new APIResponse<>(status.getReasonPhrase(), Map.of());
+        return new APIResponse<>(status.getReasonPhrase(), status.getReasonPhrase(), Map.of());
     }
 }

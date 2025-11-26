@@ -32,7 +32,12 @@ public class SecurityConfig {
 
 		CsrfTokenRequestAttributeHandler requestHandler =
 			new CsrfTokenRequestAttributeHandler();
-        requestHandler.setCsrfRequestAttributeName(null);
+
+        CookieCsrfTokenRepository cookieCsrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        cookieCsrfTokenRepository.setCookieCustomizer(builder -> builder
+//                .sameSite("None")
+                .secure(true)
+        );
 
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
@@ -43,16 +48,22 @@ public class SecurityConfig {
                         sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .csrf(csrf -> csrf
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRepository(cookieCsrfTokenRepository)
                         .csrfTokenRequestHandler(requestHandler)
+                        .ignoringRequestMatchers(
+                                "/auth/login",
+                                "/auth/signup"
+                        )
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/hc", "/csrf").permitAll()
-                        .requestMatchers("/upload/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/hc").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/csrf").permitAll()
+                        .requestMatchers("/upload/**").permitAll()
                         .requestMatchers(
-							"/auth/login",
-							"/auth/signup"
+                                "/auth/login",
+                                "/auth/signup",
+                                "/auth/refresh"
 						).permitAll()
                         .requestMatchers(
                                 "/swagger-ui.html",

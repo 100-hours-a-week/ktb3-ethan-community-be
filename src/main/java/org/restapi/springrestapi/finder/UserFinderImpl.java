@@ -19,7 +19,7 @@ public class UserFinderImpl implements UserFinder {
 
 	@Override
 	public User findById(Long id) {
-		return userRepository.findByIdAndDeletedAtIsNull(id)
+		return userRepository.findById(id)
 			.orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));
 	}
 
@@ -30,34 +30,34 @@ public class UserFinderImpl implements UserFinder {
 
     @Override
 	public boolean existsById(Long id) {
-		return userRepository.existsByIdAndDeletedAtIsNull(id);
+		return userRepository.existsById(id);
 	}
 
 	@Override
 	public boolean existsByEmail(String email) {
-		return userRepository.existsByEmailAndDeletedAtIsNull(email);
+		return userRepository.existsByEmail(email);
 	}
 
 	@Override
 	public boolean existsByNickName(String nickName) {
-		return userRepository.existsByNicknameAndDeletedAtIsNull(nickName);
+		return userRepository.existsByNickname(nickName);
 	}
 
     @Override
     public User findByEmail(String email) {
-        return userRepository.findByEmailAndDeletedAtIsNull(email).orElseThrow(
+        return userRepository.findByEmail(email).orElseThrow(
                 ()-> new AppException(UserErrorCode.USER_NOT_FOUND));
     }
 
     @Override
     public User findByIdOrAuthThrow(Long id) {
-        return userRepository.findByIdAndDeletedAtIsNull(id)
+        return userRepository.findById(id)
                 .orElseThrow(()->new AppException(AuthErrorCode.UNAUTHORIZED));
     }
 
     @Override
     public User findByEmailOrAuthThrow(String email) {
-        return userRepository.findByEmailAndDeletedAtIsNull(email).orElseThrow(
+        return userRepository.findByEmail(email).orElseThrow(
                 ()-> new AppException(AuthErrorCode.INVALID_EMAIL_OR_PASSWORD)
         );
     }

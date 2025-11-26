@@ -78,7 +78,7 @@ public class JwtProvider {
         return ResponseCookie.from(REFRESH_COOKIE, refreshToken)
                 .httpOnly(true)
                 .secure(true)
-                .sameSite("Lax")
+                .sameSite("Lax") // 완전히 cross-site라면 None
                 .path(REFRESH_PATH)
                 .maxAge(props.refresh().ttl())
                 .build();

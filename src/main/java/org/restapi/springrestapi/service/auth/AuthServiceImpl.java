@@ -1,6 +1,9 @@
 package org.restapi.springrestapi.service.auth;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.restapi.springrestapi.dto.auth.*;
+import org.restapi.springrestapi.exception.AppException;
+import org.restapi.springrestapi.exception.code.AuthErrorCode;
 import org.restapi.springrestapi.finder.UserFinder;
 import org.restapi.springrestapi.model.User;
 
@@ -12,6 +15,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -33,19 +37,23 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(readOnly = true)
 	public LoginResult login(LoginRequest loginRequest) {
-        Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password())
-        );
+        try {
+            Authentication auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password())
+            );
 
-        CustomUserDetails principal = (CustomUserDetails) auth.getPrincipal();
-        User user = principal.user();
+            CustomUserDetails principal = (CustomUserDetails) auth.getPrincipal();
+            User user = principal.user();
 
-        String access = jwtProvider.createAccessToken(user.getId());
-        String refresh = jwtProvider.createRefreshToken(user.getId());
+            String access = jwtProvider.createAccessToken(user.getId());
+            String refresh = jwtProvider.createRefreshToken(user.getId());
 
-        ResponseCookie refreshCookie = jwtProvider.createRefreshCookie(refresh);
+            ResponseCookie refreshCookie = jwtProvider.createRefreshCookie(refresh);
 
-        return LoginResult.from(user, access, refreshCookie);
+            return LoginResult.from(user, access, refreshCookie);
+        } catch (AuthenticationException ex) {
+            throw new AppException(AuthErrorCode.INVALID_EMAIL_OR_PASSWORD);
+        }
     }
 
     @Override
@@ -66,7 +74,10 @@ public class AuthServiceImpl implements AuthService {
 
 
     @Override
-    public RefreshTokenResult refresh(Long userId) {
+    public RefreshTokenResult refresh(HttpServletRequest request) {
+        String refreshToken = jwtProvider.resolveRefreshToken(request).get();
+        Long userId = jwtProvider.getUserIdFromRefresh(refreshToken);
+
         userValidator.validateUserExists(userId);
 
         String newAccess = jwtProvider.createAccessToken(userId);

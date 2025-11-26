@@ -48,6 +48,8 @@ public class JwtFilter extends OncePerRequestFilter {
                     // refresh가 있는데 invalid → 재로그인 필요
                     throw new AuthException(AuthErrorCode.REFRESH_TOKEN_INVALID);
                 }
+                // 이후 서비스 계층에서는 그냥 리프레쉬 가져다 쓰면 됨
+
 
                 filterChain.doFilter(request, response);
                 return;
