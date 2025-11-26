@@ -1,65 +1,88 @@
-# ERD
 
-![ERD](https://github.com/100-hours-a-week/ktb3-ethan-full/blob/main/spring-rest-api/erd.png)
+# '하루조각 커뮤니티' Backend
+
+- 조각처럼 작은 하루의 기억들을 공유하는 커뮤니티 서비스의 백엔드 API 서버입니다.
+- Spring Boot 기반의 인증/인가(JWT), 게시글/댓글, 파일 업로드를 제공합니다.
+
+---
+
+## 주요 기능
+- 인증/회원
+    - 회원가입, 로그인, 로그아웃, 액세스 토큰 재발급 (JWT + Refresh Token Cookie)
+    - 사용자 프로필 조회/수정, 비밀번호 변경, 회원 탈퇴
+- 게시글
+    - 등록/수정/삭제, 상세/목록 조회(커서 기반 페이지네이션), 좋아요 토글
+- 댓글
+    - 등록/수정/삭제, 목록 조회(커서 기반)
+- 업로드
+    - 프로필 이미지, 게시글 대표 이미지 업로드 (로컬 스토리지 저장)
+- 공통
+    - Swagger UI(v3) 문서화, 예외 포맷 통일(APIResponse), 헬스체크(`/hc`) 및 csrf 토큰 발급(`/csrf`)
+
+---
+
+## Stack
+- Language: Java 17
+- Framework: Spring Boot 3.5.6 (Web, Security, Data JPA)
+- DB: MySQL 8.x (JPA/Hibernate)
+- Security: Spring Security, JWT (io.jsonwebtoken:jjwt 0.12.x)
+- Docs: springdoc-openapi-starter-webmvc-ui 2.8.x
+- Build: Gradle
+
+---
+
+### 프로젝트 실행 및 주요 경로
+
+1) 애플리케이션 실행
+- IDE: `SpringRestApiApplication` 실행
+- Gradle: `./gradlew bootRun`
 
 
-# SOLID 원칙 기반 리팩토링(SRP + DIP)
+- 주의: JWT 시크릿은 실제 배포 시 환경변수/외부 설정으로 교체하세요.
+- `ddl-auto: update`는 개발 편의용입니다(운영 비권장).
 
-이 섹션은 SOLID 원칙 기반 리팩토링의 방향과 성과를 정리합니다.
+<br>
 
-- 대상: `UserServiceImpl`, `PostServiceImpl`, `CommentServiceImpl`
-- 선정 이유:
-  - 핵심 유스케이스(가입/프로필 수정/비밀번호 변경/게시글·댓글 CRUD 등)와 검증(존재/중복)이 서비스 내부에 혼재되어 있어 SRP 위배 소지가 있었음.
-  - 서비스가 세부 구현(Repository)의 검증 메서드에 직접 의존하는 경우가 있어 DIP 관점에서 결합도가 높았음.
 
-- 문제점:
-  - 변경 이유의 증가: 검증 정책이 바뀌면 서비스 클래스를 수정해야 함.
-  - 재사용성 저하: 동일 검증을 다른 서비스에서 재사용하기 어려움.
+2) API 문서 
+- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 
-- 판단 근거:
-  - 검증 로직은 재사용성이 높고, 변경 가능성이 존재하므로 별도 구성 가치가 큼.
-  - SRP 준수(책임 분리), DIP 준수(추상 의존)로 구조 개선 필요.
+<br>
 
-- 리팩토링 방향(통합):
-  1) 검증 인터페이스 도입: `UserValidator`, `PostValidator`, `CommentValidator`
-     - UserValidator: `validateDuplicateEmail`, `validateDuplicateNickname`, `validateOnRegister`, `validatePasswordChange`
-     - PostValidator: `validateAuthorId`, `validatePostExists`, `validateAuthorPermission`, `validateAuthorInfo`
-     - CommentValidator: `validateUser`, `validatePost`, `validateComment`, `validateOrigin`
-  2) 구현체 분리(`*ValidatorImpl`):
-     - `UserValidatorImpl`: `UserFinder.existsByEmail/existsByNickName`으로 중복 검증, 비밀번호 일치 검증 수행
-     - `PostValidatorImpl`: 존재 검증은 `UserFinder.existsById`, `PostFinder.existsById` 사용, 권한 검증은 `PostFinder.existsByIdAndUserId` 사용
-     - `CommentValidatorImpl`: 존재 검증은 `UserFinder/PostFinder/CommentFinder`의 `existsById` 사용
-  3) 서비스는 검증 추상에 의존하고, 기존 private 검증 메서드 제거:
-     - `UserServiceImpl`, `PostServiceImpl`, `CommentServiceImpl`에 각 Validator 주입 후 호출 위임
-  4) 존재 검증 원칙:
-     - 엔티티가 바로 필요하지 않으면 `exists*`를 사용하고, Validator에서 적절한 도메인 예외를 던진다.
-     - 엔티티가 즉시 필요하면 `find*`를 사용하고, Finder가 “미존재 예외”를 던지도록 위임한다.
-     - 적용 상태: 현재 `UserValidatorImpl`, `PostValidatorImpl`, `CommentValidatorImpl` 모두 존재 검증에 Finder의 `exists*`를 사용하도록 통일 완료. 권한 검증은 Repository 특화 exists(`postRepository.existsByIdAndUserId`)만 예외적으로 사용.
+3) 파일 업로드 저장소
+- 기본 경로: 프로젝트 루트의 `upload/`
+- 공개 URL 기본값: `http://localhost:8080/upload`
 
-- 변경 파일(주요):
-  - User
-    - `src/main/java/org/restapi/springrestapi/service/user/UserValidator.java`
-    - `src/main/java/org/restapi/springrestapi/service/user/UserValidatorImpl.java`
-    - `src/main/java/org/restapi/springrestapi/service/user/UserServiceImpl.java`
-    - `src/main/java/org/restapi/springrestapi/finder/UserFinder.java`
-    - `src/main/java/org/restapi/springrestapi/finder/UserFinderImpl.java`
-  - Post
-    - `src/main/java/org/restapi/springrestapi/service/post/PostValidator.java`
-    - `src/main/java/org/restapi/springrestapi/service/post/PostValidatorImpl.java`
-    - `src/main/java/org/restapi/springrestapi/service/post/PostServiceImpl.java`
-    - `src/main/java/org/restapi/springrestapi/finder/PostFinder.java`
-    - `src/main/java/org/restapi/springrestapi/finder/PostFinderImpl.java`
-  - Comment
-    - `src/main/java/org/restapi/springrestapi/service/comment/CommentValidator.java`
-    - `src/main/java/org/restapi/springrestapi/service/comment/CommentValidatorImpl.java`
-    - `src/main/java/org/restapi/springrestapi/service/comment/CommentServiceImpl.java`
-    - `src/main/java/org/restapi/springrestapi/finder/CommentFinder.java`
-    - `src/main/java/org/restapi/springrestapi/finder/CommentFinderImpl.java`
+---
 
-- 성과:
-  - 책임 분리로 변경 이유가 분리됨: 검증 정책 변경 시 Validator 구현만 수정하면 됨.
-  - 테스트 용이성 증대: Validator 단위 테스트로 검증 정책을 독립 확인 가능.
-  - private 검증 메서드 제거: User 3개 + Post/Comment 6개 ≈ 총 9개 제거 → 클래스 복잡도/라인 수 감소
-  - 의존성 방향 개선: 서비스 → 추상(Validator) 의존으로 결합도 저하
-  - 재사용성 향상: 동일 검증이 필요한 다른 유스케이스에서 Validator 재사용 가능.
-  - 분기/검증이 Validator로 이동하며 서비스 메서드 복잡도 완화
+### 폴더 구조
+- `src/main/java/org/restapi/springrestapi`
+    - `controller`: Auth/User/Post/Comment/Upload REST 컨트롤러
+    - `service`: 도메인 서비스 구현(비즈니스 로직)
+    - `repository`: Spring Data JPA 저장소
+    - `model`: JPA 엔티티(User, Post, Comment, PostLike)
+    - `dto`: 요청/응답 DTO 및 결과 모델
+    - `security`: SecurityConfig, JWT 필터/프로바이더, 핸들러
+    - `config`: Swagger, Web/CORS, 업로드 리소스 매핑
+    - `common`: APIResponse, 파일 저장 유틸 등
+    - `validator`: 요청 유효성 커스텀 어노테이션 및 구현
+- `src/main/resources/application.yml`: 환경 설정
+- `erd.png`: ERD 이미지
+
+---
+
+### 인증/보안 개요
+- 세션리스(stateless) 구성: `SessionCreationPolicy.STATELESS`
+- CSRF: 활성화 + `CookieCsrfTokenRepository` (HttpOnly=false, Secure=true)
+    - 예외 경로: `/auth/login`, `/auth/signup`
+    - 프론트엔드에서 CSRF 토큰을 헤더로 전송해야 함
+    - 필요시 `/csrf`로 CSRF 토큰 요청 가능
+- CORS: `CorsConfig`를 통해 허용 도메인/메서드/헤더 설정
+- JWT
+  - 토큰이 존재할 경우 유효해야하는 사용자로 판별, 인증 수행
+  - Access Token: Authorization 헤더(`Bearer <token>`)로 전송
+  - Refresh Token: 서버가 `HttpOnly, Secure` 쿠키로 발급/갱신
+
+---
+
+## 트러블슈팅 
