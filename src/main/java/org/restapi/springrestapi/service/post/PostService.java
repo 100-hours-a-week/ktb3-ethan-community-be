@@ -8,7 +8,7 @@ import org.restapi.springrestapi.dto.post.RegisterPostRequest;
 import org.restapi.springrestapi.dto.post.PostSummary;
 
 public interface PostService {
-	PostSummary registerPost(Long userId, RegisterPostRequest command);
+	PostSummary createPost(Long userId, RegisterPostRequest command);
 	PostListResult getPostList(Long cursor, int limit);
 	PostResult getPost(HttpServletRequest request, Long userId, Long id);
     PostResult updatePost(Long userId, Long id, PatchPostRequest request);

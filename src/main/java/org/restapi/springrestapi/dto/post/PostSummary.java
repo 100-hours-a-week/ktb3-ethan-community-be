@@ -2,7 +2,6 @@ package org.restapi.springrestapi.dto.post;
 
 import java.time.LocalDateTime;
 
-import org.restapi.springrestapi.dto.user.SimpleUserInfo;
 import org.restapi.springrestapi.model.Post;
 
 import lombok.Builder;
@@ -10,10 +9,9 @@ import lombok.Builder;
 @Builder(toBuilder = true)
 public record PostSummary(
 	Long id,
-	Long userId,
-    String authorNickname,
+    String userProfileImageUrl,
+    String userNickname,
 	String title,
-    String content,
     String thumbnailImageUrl,
 	int likeCount,
     int commentCount,
@@ -24,14 +22,11 @@ public record PostSummary(
         return base(post);
     }
 
-    public static PostSummary from(PostSummary post, SimpleUserInfo userInfo) {
-        return post.toBuilder().authorNickname(userInfo.nickname()).build();
-    }
-
     private static PostSummary base(Post post) {
         return PostSummary.builder()
                 .id(post.getId())
-                .userId(post.getAuthor().getId())
+                .userProfileImageUrl(post.getAuthor().getProfileImageUrl())
+                .userNickname(post.getAuthor().getNickname())
                 .title(post.getTitle())
                 .likeCount(post.getLikeCount())
                 .commentCount(post.getCommentCount())

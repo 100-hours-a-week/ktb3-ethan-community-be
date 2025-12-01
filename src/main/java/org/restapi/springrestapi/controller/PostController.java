@@ -14,6 +14,7 @@ import org.restapi.springrestapi.service.post.PostLikeService;
 import org.restapi.springrestapi.service.post.PostService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -31,6 +32,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+@Validated
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/posts")
@@ -53,7 +55,7 @@ public class PostController {
 		final Long userId = user.getId();
 
 		return ResponseEntity.status(SuccessCode.REGISTER_SUCCESS.getStatus())
-			.body(APIResponse.ok(SuccessCode.REGISTER_SUCCESS, postService.registerPost(userId, request)));
+			.body(APIResponse.ok(SuccessCode.REGISTER_SUCCESS, postService.createPost(userId, request)));
 	}
 
 	@Operation(summary = "게시글 목록 조회", description = "커서 기반으로 게시글 리스트를 조회합니다.")
@@ -80,7 +82,7 @@ public class PostController {
         HttpServletRequest request,
         @AuthenticationPrincipal CustomUserDetails user
 	) {
-		final Long userId = user.getId();
+		final Long userId = (user != null) ? user.getId() : null;
 
 		return ResponseEntity.ok()
 			.body(APIResponse.ok(SuccessCode.GET_SUCCESS, postService.getPost(request, userId, id)));

@@ -34,23 +34,13 @@ public class JwtFilter extends OncePerRequestFilter {
 
             // refresh 엔드포인트 통과
             if (JwtProvider.REFRESH_PATH.equals(request.getRequestURI())) {
-                Optional<String> refreshOpt = jwtProvider.resolveRefreshToken(request);
-
-                if (refreshOpt.isEmpty()) {
-                    // refresh 쿠키가 없으면 → 재로그인 필요
-                    throw new AuthException(AuthErrorCode.UNAUTHORIZED);
-
-                }
-
-                String refreshToken = refreshOpt.get();
+                String refreshToken = jwtProvider.resolveRefreshToken(request).get();
 
                 if (!jwtProvider.validateRefreshToken(refreshToken)) {
                     // refresh가 있는데 invalid → 재로그인 필요
                     throw new AuthException(AuthErrorCode.REFRESH_TOKEN_INVALID);
                 }
                 // 이후 서비스 계층에서는 그냥 리프레쉬 가져다 쓰면 됨
-
-
                 filterChain.doFilter(request, response);
                 return;
             }

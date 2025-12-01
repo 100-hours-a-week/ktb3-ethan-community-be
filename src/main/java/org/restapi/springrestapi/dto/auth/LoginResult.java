@@ -7,7 +7,8 @@ import org.springframework.http.ResponseCookie;
 
 @Builder
 public record LoginResult(
-	Long userId,
+    Long id,
+    String email,
 	String nickname,
     String profileImageUrl,
 	String accessToken,
@@ -15,7 +16,8 @@ public record LoginResult(
 ) {
     public static LoginResult from(User user, String accessToken, ResponseCookie refreshCookie) {
         return LoginResult.builder()
-                .userId(user.getId())
+                .id(user.getId())
+                .email(user.getEmail())
                 .nickname(user.getNickname())
                 .profileImageUrl(user.getProfileImageUrl())
                 .accessToken(accessToken)

@@ -11,6 +11,7 @@ public record PatchPostRequest(
 	@NotBlank
 	String content,
 
+    @NotBlank
 	String thumbnailImageUrl
 ) {
 

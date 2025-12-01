@@ -17,7 +17,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import org.springframework.web.cors.CorsConfigurationSource;
+
 
 @Configuration
 @EnableWebSecurity
@@ -35,7 +37,8 @@ public class SecurityConfig {
 
         CookieCsrfTokenRepository cookieCsrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         cookieCsrfTokenRepository.setCookieCustomizer(builder -> builder
-//                .sameSite("None")
+                .path("/")
+                .sameSite("None")
                 .secure(true)
         );
 
@@ -50,17 +53,15 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(cookieCsrfTokenRepository)
                         .csrfTokenRequestHandler(requestHandler)
-                        .ignoringRequestMatchers(
-                                "/auth/login",
-                                "/auth/signup"
+                        .requireCsrfProtectionMatcher(
+                                new RegexRequestMatcher("/auth/refresh", "POST")
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/hc").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/csrf").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/hc", "/csrf").permitAll()
                         .requestMatchers("/upload/**").permitAll()
-                        .requestMatchers(
+                        .requestMatchers(HttpMethod.POST,
                                 "/auth/login",
                                 "/auth/signup",
                                 "/auth/refresh"
@@ -70,7 +71,7 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/users/*", "/posts", "/post", "/posts/*/comments").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/users/*", "/posts", "/posts/**", "/post", "/posts/*/comments").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )

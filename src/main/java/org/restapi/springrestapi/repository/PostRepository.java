@@ -17,7 +17,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query(
         """
         select new org.restapi.springrestapi.dto.post.PostSummary (
-                p.id, a.id, a.nickname, p.title, p.content, p.thumbnailImageUrl, p.likeCount, p.commentCount, p.viewCount, p.createdAt)
+                p.id, a.profileImageUrl, a.nickname, p.title, p.thumbnailImageUrl, p.likeCount, p.commentCount, p.viewCount, p.createdAt)
         from Post p left join p.author a
         order by p.id desc
         """
@@ -27,7 +27,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query(
             """
             select new org.restapi.springrestapi.dto.post.PostSummary (
-                    p.id, a.id, a.nickname, p.title, p.content, p.thumbnailImageUrl, p.likeCount, p.commentCount, p.viewCount, p.createdAt)
+                    p.id, a.profileImageUrl, a.nickname, p.title, p.thumbnailImageUrl, p.likeCount, p.commentCount, p.viewCount, p.createdAt)
             from Post p left join p.author a
             where p.id < :cursorId
             order by p.id desc

@@ -42,7 +42,7 @@ public class Post {
 	private int commentCount;
 
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "user_id")
     private User author;
 

@@ -9,6 +9,8 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.restapi.springrestapi.exception.AppException;
+import org.restapi.springrestapi.exception.code.AuthErrorCode;
 import org.restapi.springrestapi.finder.UserFinder;
 import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.security.CustomUserDetails;
@@ -67,24 +69,24 @@ public class JwtProvider {
        ========================= */
 
     public String createAccessToken(Long userId) {
-        return _createToken(userId, TYPE_ACCESS, accessKey, props.access().ttl());
+        return createToken(userId, TYPE_ACCESS, accessKey, props.access().ttl());
     }
 
     public String createRefreshToken(Long userId) {
-        return _createToken(userId, TYPE_REFRESH, refreshKey, props.refresh().ttl());
+        return createToken(userId, TYPE_REFRESH, refreshKey, props.refresh().ttl());
     }
 
     public ResponseCookie createRefreshCookie(String refreshToken) {
         return ResponseCookie.from(REFRESH_COOKIE, refreshToken)
+                .path(REFRESH_PATH)
                 .httpOnly(true)
                 .secure(true)
-                .sameSite("Lax") // 완전히 cross-site라면 None
-                .path(REFRESH_PATH)
+                .sameSite("None")
                 .maxAge(props.refresh().ttl())
                 .build();
     }
 
-    private String _createToken(Long userId, String type, SecretKey key, Duration ttl) {
+    private String createToken(Long userId, String type, SecretKey key, Duration ttl) {
         Date now = new Date();
         Date exp = new Date(now.getTime() + ttl.toMillis());
 
@@ -103,16 +105,16 @@ public class JwtProvider {
        ========================= */
 
     public boolean validateAccessToken(String token) {
-        return _validate(token, accessKey, TYPE_ACCESS);
+        return validate(token, accessKey, TYPE_ACCESS);
     }
 
     public boolean validateRefreshToken(String token) {
-        return _validate(token, refreshKey, TYPE_REFRESH);
+        return validate(token, refreshKey, TYPE_REFRESH);
     }
 
-    private boolean _validate(String token, SecretKey key, String expectedTyp) {
+    private boolean validate(String token, SecretKey key, String expectedTyp) {
         try {
-            Claims claims = _parse(token, key);
+            Claims claims = parse(token, key);
             String actualTyp = claims.get(CLAIM_TOKEN_TYPE, String.class);
             return expectedTyp.equals(actualTyp);
         } catch (JwtException | IllegalArgumentException e) {
@@ -141,14 +143,14 @@ public class JwtProvider {
      */
 
     public Long getUserIdFromAccess(String token) {
-        return Long.valueOf(_parse(token, accessKey).getSubject());
+        return Long.valueOf(parse(token, accessKey).getSubject());
     }
 
     public Long getUserIdFromRefresh(String token) {
-        return Long.valueOf(_parse(token, refreshKey).getSubject());
+        return Long.valueOf(parse(token, refreshKey).getSubject());
     }
 
-    private Claims _parse(String token, SecretKey key) {
+    private Claims parse(String token, SecretKey key) {
         return Jwts.parser()
                 .verifyWith(key)
                 .build()
@@ -170,13 +172,15 @@ public class JwtProvider {
 
     public Optional<String> resolveRefreshToken(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
-        if (cookies == null) return Optional.empty();
+        if (cookies == null) {
+            throw new AppException(AuthErrorCode.COOKIE_MISSING);
+        }
 
         for (Cookie c : cookies) {
             if (REFRESH_COOKIE.equals(c.getName())) {
                 return Optional.ofNullable(c.getValue());
             }
         }
-        return Optional.empty();
+        throw new AppException(AuthErrorCode.REFRESH_COOKIE_MISSING);
     }
 }

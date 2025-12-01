@@ -10,28 +10,32 @@ import lombok.Getter;
 @Builder
 public class PostResult {
 	private Long id;
-	private Long userId;
+    private Long userId;
+    private String userNickName;
+    private String userProfileImageUrl;
 	private String title;
 	private String content;
+    private String thumbnailImageUrl;
 	private boolean didLike;
 	private int likeCount;
 	private int commentCount;
 	private int viewCount;
 	private LocalDateTime createdAt;
-	private String image;
 
 	public static PostResult from(Post post, boolean didLike) {
 		return PostResult.builder()
 			.id(post.getId())
-			.userId(post.getAuthor().getId())
+            .userId(post.getAuthor().getId())
+            .userNickName(post.getAuthor().getNickname())
+            .userProfileImageUrl(post.getAuthor().getProfileImageUrl())
 			.title(post.getTitle())
 			.content(post.getContent())
+            .thumbnailImageUrl(post.getThumbnailImageUrl())
 			.likeCount(post.getLikeCount())
 			.commentCount(post.getCommentCount())
 			.viewCount(post.getViewCount())
 			.createdAt(post.getCreatedAt())
-			.image(post.getThumbnailImageUrl())
-                .didLike(didLike)
+            .didLike(didLike)
 			.build();
 	}
     public static PostResult from(Post post) {

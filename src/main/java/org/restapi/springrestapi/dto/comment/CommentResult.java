@@ -9,16 +9,20 @@ import lombok.Builder;
 @Builder
 public record CommentResult(
 	Long id,
+    Long userId,
+    String userNickname,
+    String userProfileImageUrl,
     String content,
-	LocalDateTime createAt,
-	Long userId
+	LocalDateTime createAt
 ) {
 	public static CommentResult from(Comment comment) {
 		return CommentResult.builder()
 			    .id(comment.getId())
+                .userId(comment.getUser().getId())
+                .userNickname(comment.getUser().getNickname())
+                .userProfileImageUrl(comment.getUser().getProfileImageUrl())
                 .content(comment.getContent())
                 .createAt(comment.getCreatedAt())
-                .userId(comment.getUser().getId())
                 .build();
 	}
 }

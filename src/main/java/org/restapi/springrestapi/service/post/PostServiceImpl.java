@@ -34,7 +34,7 @@ public class PostServiceImpl implements PostService {
     private final LocalPostViewDebounce localPostViewDebounce;
 
     @Override
-	public PostSummary registerPost(Long userId, RegisterPostRequest command) {
+	public PostSummary createPost(Long userId, RegisterPostRequest command) {
 		userValidator.validateUserExists(userId);
 
         User user = userFinder.findProxyById(userId);

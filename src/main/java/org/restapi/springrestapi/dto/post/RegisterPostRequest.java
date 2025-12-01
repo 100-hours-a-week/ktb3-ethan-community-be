@@ -11,7 +11,6 @@ public record RegisterPostRequest (
 	@NotBlank
 	String content,
 
-	String thumbnailImageUrl // nullable
-){
-
-}
+    @NotBlank
+	String thumbnailImageUrl
+){ }

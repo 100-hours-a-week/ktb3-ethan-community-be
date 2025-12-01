@@ -9,6 +9,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
+@Table(
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"user_id", "post_id"})
+    }
+)
 public class PostLike {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

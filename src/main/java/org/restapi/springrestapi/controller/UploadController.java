@@ -4,10 +4,9 @@ import org.restapi.springrestapi.dto.upload.UploadImageResponse;
 import org.restapi.springrestapi.exception.code.SuccessCode;
 import org.restapi.springrestapi.common.APIResponse;
 import org.restapi.springrestapi.common.util.FileStorageService;
-import org.restapi.springrestapi.security.CustomUserDetails;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,6 +18,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
+@Validated
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "Upload", description = "파일 업로드 API")
