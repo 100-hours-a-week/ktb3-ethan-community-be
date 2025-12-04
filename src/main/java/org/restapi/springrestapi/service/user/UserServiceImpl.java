@@ -1,6 +1,7 @@
 package org.restapi.springrestapi.service.user;
 
 import org.restapi.springrestapi.dto.user.ChangePasswordRequest;
+import org.restapi.springrestapi.dto.user.EncodedPassword;
 import org.restapi.springrestapi.dto.user.PatchProfileRequest;
 import org.restapi.springrestapi.dto.user.UserProfileResult;
 import org.restapi.springrestapi.finder.UserFinder;
@@ -26,25 +27,25 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public UserProfileResult getUserProfile(Long id) {
-		return UserProfileResult.from(userFinder.findById(id));
+		return UserProfileResult.from(userFinder.findByIdOrThrow(id));
 	}
 
 	@Override
 	public void updateProfile(Long id, PatchProfileRequest request) {
-		userValidator.validateDuplicateNickname(request.getNickname());
+		userValidator.validateDuplicateNickname(request.nickname());
 
-		User user = userFinder.findById(id);
+		User user = userFinder.findByIdOrThrow(id);
 		user.updateProfile(request);
 
 		userRepository.save(user);
 	}
 
 	@Override
-	public void changePassword(Long id, ChangePasswordRequest request) {
+	public void updatePasswod(Long id, ChangePasswordRequest request) {
         authValidator.validateNewPassword(request.password(), request.confirmPassword());
+		User user = userFinder.findByIdOrThrow(id);
 
-		User user = userFinder.findById(id);
-		user.updatePassword(request.password(), passwordEncoder);
+		user.updatePassword(new EncodedPassword(passwordEncoder.encode(request.password())));
 
 		userRepository.save(user);
 	}
