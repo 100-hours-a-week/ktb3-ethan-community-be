@@ -15,7 +15,6 @@ import org.restapi.springrestapi.dto.user.PatchProfileRequest;
 
 import lombok.Builder;
 import lombok.Getter;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -66,17 +65,17 @@ public class User {
      */
 
     @PrePersist
-    public void prePersist() {
+    private void prePersist() {
         this.joinAt = LocalDateTime.now();
     }
 
     public static User from(
         SignUpRequest signUpRequest,
-        PasswordEncoder passwordEncoder
+        EncodedPassword password
 	) {
 		return User.builder()
                 .email(signUpRequest.email())
-                .password(passwordEncoder.encode(signUpRequest.password()))
+                .password(password.value())
                 .nickname(signUpRequest.nickname())
                 .profileImageUrl(signUpRequest.profileImageUrl())
                 .build();
@@ -88,18 +87,12 @@ public class User {
     - updatePassword(String, PasswordEncoder)
      */
     public void updateProfile(PatchProfileRequest request) {
-        String nickname = request.nickname();
-        if (nickname != null) {
-            this.nickname = nickname;
-        }
+        this.nickname = request.nickname();
 
         if (request.removeProfileImage()) {
             this.profileImageUrl = null;
-        } else {
-            String newImage = request.profileImageUrl();
-            if (newImage != null && !newImage.isBlank()) {
-                this.profileImageUrl = newImage;
-            }
+        } else if (request.profileImageUrl() != null){
+            this.profileImageUrl = request.profileImageUrl();
         }
     }
 

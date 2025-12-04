@@ -2,6 +2,7 @@ package org.restapi.springrestapi.service.auth;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.restapi.springrestapi.dto.auth.*;
+import org.restapi.springrestapi.dto.user.EncodedPassword;
 import org.restapi.springrestapi.exception.AppException;
 import org.restapi.springrestapi.exception.code.AuthErrorCode;
 import org.restapi.springrestapi.finder.UserFinder;
@@ -60,7 +61,7 @@ public class AuthServiceImpl implements AuthService {
     public LoginResult signup(SignUpRequest signUpRequest) {
         userValidator.validateSignUpUser(signUpRequest.email(), signUpRequest.nickname());
 
-        User user = User.from(signUpRequest, passwordEncoder);
+        User user = User.from(signUpRequest, new EncodedPassword(passwordEncoder.encode(signUpRequest.password())));
 
         User saved = userRepository.save(user);
 
