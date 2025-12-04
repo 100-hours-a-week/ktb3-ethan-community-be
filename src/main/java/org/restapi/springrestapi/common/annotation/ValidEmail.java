@@ -14,10 +14,11 @@ import jakarta.validation.constraints.NotBlank;
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = {})
-@NotBlank(message = "email_is_required")
-@Email(message = "invalid_email_format")
+@NotBlank(message = "이메일은 필수 입력값입니다.")
+@Email(message = "올바른 이메일 형식이 아닙니다.")
 public @interface ValidEmail {
-	String message() default "invalid_email";
-	Class<?>[] groups() default {};
-	Class<? extends Payload>[] payload() default {};
+    String message() default "유효하지 않은 이메일입니다.";
+
+    Class<?>[] groups() default {};
+    Class<? extends Payload>[] payload() default {};
 }
