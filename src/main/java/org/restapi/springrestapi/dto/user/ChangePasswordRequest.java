@@ -13,6 +13,4 @@ public record ChangePasswordRequest (
 	@NotBlank(message = "새로운 비밀번호 확인 입력 누락")
 	@Schema(description = "새로운 비밀번호 확인", example = "testTT1!!")
     String confirmPassword
-){
-
-}
+){ }

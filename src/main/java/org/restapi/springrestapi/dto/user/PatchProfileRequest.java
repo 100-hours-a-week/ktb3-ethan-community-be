@@ -2,12 +2,12 @@ package org.restapi.springrestapi.dto.user;
 
 import org.restapi.springrestapi.common.annotation.ValidNickname;
 
-import lombok.Getter;
+public record PatchProfileRequest(
+        @ValidNickname
+        String nickname,
 
-@Getter
-public class PatchProfileRequest {
-	@ValidNickname
-	private String nickname;
+        // nullable
+        String profileImageUrl,
 
-	private String profileImageUrl;
-}
+        boolean removeProfileImage
+) {  }

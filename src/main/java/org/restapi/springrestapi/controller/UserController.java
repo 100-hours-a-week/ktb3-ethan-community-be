@@ -2,7 +2,6 @@ package org.restapi.springrestapi.controller;
 
 import org.restapi.springrestapi.dto.user.ChangePasswordRequest;
 import org.restapi.springrestapi.dto.user.PatchProfileRequest;
-import org.restapi.springrestapi.dto.user.PatchProfileResponse;
 import org.restapi.springrestapi.dto.user.UserProfileResult;
 import org.restapi.springrestapi.exception.code.SuccessCode;
 import org.restapi.springrestapi.security.CustomUserDetails;
@@ -56,14 +55,14 @@ public class UserController {
 		@ApiResponse(responseCode = "400", description = "요청 필드 유효성 실패")
 	})
 	@PatchMapping
-	public ResponseEntity<APIResponse<PatchProfileResponse>> updateProfile(
+	public ResponseEntity<APIResponse<Void>> updateProfile(
 		@Valid @RequestBody PatchProfileRequest request,
         @AuthenticationPrincipal CustomUserDetails user
 	) {
 		final Long id = user.getId();
 		userService.updateProfile(id, request);
 		return ResponseEntity.ok(APIResponse.ok(
-			SuccessCode.PATCH_SUCCESS, PatchProfileResponse.from(request)));
+			SuccessCode.PATCH_SUCCESS));
 	}
 
 	@Operation(summary = "비밀번호 변경", description = "현재 로그인 사용자의 비밀번호를 변경합니다.")
@@ -78,7 +77,7 @@ public class UserController {
         @AuthenticationPrincipal CustomUserDetails user
 	) {
 		final Long id = user.getId();
-		userService.changePassword(id, request);
+		userService.updatePasswod(id, request);
 		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
 	}
 

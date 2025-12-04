@@ -22,7 +22,7 @@ public class Comment {
     @Column(nullable = false)
 	private String content;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
     @Column(nullable = false)
@@ -35,6 +35,11 @@ public class Comment {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+    }
 
 	public static Comment from(RegisterCommentRequest command, User user) {
 		return Comment.builder()

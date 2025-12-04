@@ -5,8 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.restapi.springrestapi.common.annotation.ValidPostTitle;
 import org.restapi.springrestapi.dto.post.PatchPostRequest;
 import org.restapi.springrestapi.dto.post.RegisterPostRequest;
 
@@ -23,18 +25,20 @@ public class Post {
 	private Long id;
 
     @Column(nullable = false)
+    @ValidPostTitle
 	private String title;
 
     @Column(nullable = false)
+    @NotBlank
     private String content;
 
     private String thumbnailImageUrl;
 
-    @Column(nullable = false)
-    LocalDateTime createdAt;
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     @Column(nullable = false)
-    LocalDateTime updatedAt;
+    private LocalDateTime updatedAt;
 
     // 집계 컬럼
 	private int likeCount;
@@ -43,15 +47,22 @@ public class Post {
 
 
     @ManyToOne
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false, updatable = false)
     private User author;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<PostLike> likes = new ArrayList<>();
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<Comment> comments = new ArrayList<>();
 
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+    }
 
     /*
     constructor=

@@ -10,9 +10,9 @@ import org.restapi.springrestapi.dto.post.RegisterPostRequest;
 import org.restapi.springrestapi.dto.post.PostSummary;
 import org.restapi.springrestapi.finder.PostFinder;
 import org.restapi.springrestapi.finder.UserFinder;
+import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.model.Post;
 import org.restapi.springrestapi.repository.PostRepository;
-import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.validator.PostValidator;
 import org.restapi.springrestapi.validator.UserValidator;
 import org.springframework.stereotype.Service;
@@ -47,7 +47,7 @@ public class PostServiceImpl implements PostService {
     @Override
     public PostListResult getPostList(Long cursor, int limit) {
         List<PostSummary> postList = postFinder.findPostSummarySlice(cursor, limit).getContent();
-        if (postList.isEmpty()) {
+        if (postList.isEmpty() && cursor != null) {
             return PostListResult.from(List.of(), cursor);
         }
 
