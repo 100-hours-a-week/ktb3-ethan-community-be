@@ -1,34 +1,61 @@
 package org.restapi.springrestapi.finder;
 
+import org.restapi.springrestapi.exception.AppException;
+import org.restapi.springrestapi.exception.code.AuthErrorCode;
+import org.restapi.springrestapi.exception.code.ErrorCode;
+import org.restapi.springrestapi.exception.code.UserErrorCode;
 import org.restapi.springrestapi.model.User;
+import org.restapi.springrestapi.repository.UserRepository;
+import org.springframework.stereotype.Component;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 
-public interface UserFinder {
-	/**
-	 * 사용자의 데이터베이스 id로 사용자를 조회합니다.
-	 * @param id User 엔티티의 데이터베이스 id
-	 * @return 조회된 사용자 엔티티를 반환합니다.
-	 */
-	User findById(Long id);
-    User findProxyById(Long id);
+@Component
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class UserFinder {
+	private final UserRepository userRepository;
 
-	/**
-	 * 사용자의 존재 여부만 확인합니다.
-	 * 엔티티 로딩 없이 boolean으로 반환합니다.
-	 */
-	boolean existsById(Long id);
+    public User findProxyById(Long id) {
+        return userRepository.getReferenceById(id);
+    }
 
-	/**
-	 * 이메일 중복 여부를 확인합니다.
-	 */
-	boolean existsByEmail(String email);
+	public User findByIdOrNull(Long id) {
+		return userRepository.findById(id)
+                .orElse(null);
+	}
 
-	/**
-	 * 닉네임 중복 여부를 확인합니다.
-	 */
-	boolean existsByNickName(String nickName);
+    private User findByIdOrThrow(Long id, ErrorCode errorCode) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new AppException(errorCode));
+    }
 
-    User findByEmail(String email);
-    User findByIdOrAuthThrow(Long id);
-    User findByEmailOrAuthThrow(String email);
+    public User findByIdOrThrow(Long id) {
+        return findByIdOrThrow(id, UserErrorCode.USER_NOT_FOUND);
+    }
+
+    public User findByIdOrAuthThrow(Long id) {
+        return findByIdOrThrow(id, AuthErrorCode.UNAUTHORIZED);
+    }
+
+	public boolean existsById(Long id) {
+		return userRepository.existsById(id);
+	}
+
+	public boolean existsByEmail(String email) {
+		return userRepository.existsByEmail(email);
+	}
+
+	public boolean existsByNickName(String nickName) {
+		return userRepository.existsByNickname(nickName);
+	}
+
+
+    public User findByEmailOrAuthThrow(String email) {
+        return userRepository.findByEmail(email).orElseThrow(
+                ()-> new AppException(AuthErrorCode.INVALID_EMAIL_OR_PASSWORD)
+        );
+    }
 }
