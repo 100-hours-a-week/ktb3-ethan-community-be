@@ -6,13 +6,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.restapi.springrestapi.dto.post.PatchPostRequest;
 import org.restapi.springrestapi.dto.post.PostListResult;
 import org.restapi.springrestapi.dto.post.PostResult;
-import org.restapi.springrestapi.dto.post.RegisterPostRequest;
+import org.restapi.springrestapi.dto.post.CreatePostRequest;
 import org.restapi.springrestapi.dto.post.PostSummary;
 import org.restapi.springrestapi.finder.PostFinder;
 import org.restapi.springrestapi.finder.UserFinder;
 import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.model.Post;
 import org.restapi.springrestapi.repository.PostRepository;
+import org.restapi.springrestapi.repository.UserRepository;
 import org.restapi.springrestapi.validator.PostValidator;
 import org.restapi.springrestapi.validator.UserValidator;
 import org.springframework.stereotype.Service;
@@ -25,19 +26,19 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class PostServiceImpl implements PostService {
 	private final PostRepository postRepository;
+    private final UserRepository userRepository;
 
 	private final PostFinder postFinder;
-    private final UserFinder userFinder;
     private final PostValidator postValidator;
-    private final UserValidator userValidator;
+    private final UserFinder userFinder;
 
     private final LocalPostViewDebounce localPostViewDebounce;
 
     @Override
-	public PostSummary createPost(Long userId, RegisterPostRequest command) {
-		userValidator.validateUserExists(userId);
+	public PostSummary createPost(Long userId, CreatePostRequest command) {
+        userFinder.existsByIdOrThrow(userId);
 
-        User user = userFinder.findProxyById(userId);
+        User user = userRepository.getReferenceById(userId);
 		Post post = Post.from(command);
         post.changeAuthor(user);
 
@@ -57,7 +58,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostResult getPost(HttpServletRequest request, Long userIdOrNull, Long id) {
-        Post post = postFinder.findById(id);
+        Post post = postFinder.findByIdOrThrow(id);
 
         final boolean didLike = postFinder.isDidLikeUser(id, userIdOrNull);
         if (!localPostViewDebounce.seenRecently(request, userIdOrNull, id)) {
@@ -73,13 +74,11 @@ public class PostServiceImpl implements PostService {
     }
 
 	@Override
-	public PostResult updatePost(Long userId, Long id, PatchPostRequest command) {
-		Post post = postFinder.findById(id);
+	public void patchPost(Long userId, Long id, PatchPostRequest command) {
+		Post post = postFinder.findByIdOrThrow(id);
 		postValidator.validateAuthor(userId, id);
 
-		Post saved = Post.from(command, post);
-
-		return PostResult.from(postRepository.save(saved));
+        post.patch(command);
 	}
 
 	@Override

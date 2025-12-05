@@ -2,11 +2,10 @@ package org.restapi.springrestapi.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.restapi.springrestapi.common.APIResponse;
-import org.restapi.springrestapi.dto.post.PatchPostLikeResult;
 import org.restapi.springrestapi.dto.post.PatchPostRequest;
 import org.restapi.springrestapi.dto.post.PostListResult;
 import org.restapi.springrestapi.dto.post.PostResult;
-import org.restapi.springrestapi.dto.post.RegisterPostRequest;
+import org.restapi.springrestapi.dto.post.CreatePostRequest;
 import org.restapi.springrestapi.dto.post.PostSummary;
 import org.restapi.springrestapi.exception.code.SuccessCode;
 import org.restapi.springrestapi.security.CustomUserDetails;
@@ -49,7 +48,7 @@ public class PostController {
 	})
 	@PostMapping
 	public ResponseEntity<APIResponse<PostSummary>> registerPost(
-		@Valid @RequestBody RegisterPostRequest request,
+		@Valid @RequestBody CreatePostRequest request,
         @AuthenticationPrincipal CustomUserDetails user
 	) {
 		final Long userId = user.getId();
@@ -96,14 +95,14 @@ public class PostController {
 		@ApiResponse(responseCode = "404", description = "게시글 없음")
 	})
 	@PatchMapping("/{id}")
-	public ResponseEntity<APIResponse<PostResult>> patchPost(
+	public ResponseEntity<APIResponse<Void>> patchPost(
 		@PathVariable Long id,
 		@Valid @RequestBody PatchPostRequest request,
         @AuthenticationPrincipal CustomUserDetails user
 	) {
-		final Long userId = user.getId();
-		return ResponseEntity.ok()
-			.body(APIResponse.ok(SuccessCode.PATCH_SUCCESS, postService.updatePost(userId, id, request)));
+        postService.patchPost(user.getId(), id, request);
+        return ResponseEntity.ok()
+			.body(APIResponse.ok(SuccessCode.PATCH_SUCCESS));
 	}
 
 	@Operation(summary = "게시글 좋아요 토글", description = "현재 로그인 사용자의 좋아요 상태를 토글합니다.")
@@ -113,13 +112,13 @@ public class PostController {
 		@ApiResponse(responseCode = "404", description = "게시글 없음")
 	})
 	@PatchMapping("/{id}/like")
-	public ResponseEntity<APIResponse<PatchPostLikeResult>> updatePostLike(
+	public ResponseEntity<APIResponse<Void>> updatePostLike(
 		@PathVariable Long id,
         @AuthenticationPrincipal CustomUserDetails user
 	) {
-		final Long userId = user.getId();
+        postLikeService.togglePostLike(user.getId(), id);
 		return ResponseEntity.ok()
-			.body(APIResponse.ok(SuccessCode.PATCH_SUCCESS, postLikeService.togglePostLike(userId, id)));
+			.body(APIResponse.ok(SuccessCode.PATCH_SUCCESS));
 	}
 
 	@Operation(summary = "게시글 삭제", description = "자신이 작성한 게시글을 삭제합니다.")

@@ -5,7 +5,7 @@ import java.util.List;
 import org.restapi.springrestapi.dto.comment.CommentListResult;
 import org.restapi.springrestapi.dto.comment.CommentResult;
 import org.restapi.springrestapi.dto.comment.PatchCommentRequest;
-import org.restapi.springrestapi.dto.comment.RegisterCommentRequest;
+import org.restapi.springrestapi.dto.comment.CreateCommentRequest;
 import org.restapi.springrestapi.finder.CommentFinder;
 import org.restapi.springrestapi.finder.PostFinder;
 import org.restapi.springrestapi.finder.UserFinder;
@@ -37,15 +37,14 @@ public class CommentServiceImpl implements CommentService {
     private final UserValidator userValidator;
 
     @Override
-	public CommentResult registerComment(Long userId, RegisterCommentRequest request, Long postId) {
-        userValidator.validateUserExists(userId);
+	public CommentResult createComment(Long userId, CreateCommentRequest request, Long postId) {
+        userFinder.existsByIdOrThrow(userId);
         postValidator.validatePostExists(postId);
 
         User user = userFinder.findProxyById(userId);
-		Comment comment = Comment.from(request, user);
-
         Post post = postFinder.findProxyById(postId);
-        comment.changePost(post);
+		Comment comment = Comment.from(request, user, post);
+
         postRepository.increaseCommentCount(postId);
 
 		return CommentResult.from(commentRepository.save(comment));
@@ -83,8 +82,8 @@ public class CommentServiceImpl implements CommentService {
 	}
 
 	@Override
-	public void deleteComment(Long userId, Long id, Long postId) {
-        userValidator.validateUserExists(userId);
+	public void deleteComment(Long userId, Long postId, Long id) {
+        userFinder.existsByIdOrThrow(userId);
         postValidator.validatePostExists(postId);
         commentValidator.validateCommentExists(id);
         commentValidator.validateOwner(id, userId);

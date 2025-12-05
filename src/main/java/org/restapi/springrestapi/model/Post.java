@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.restapi.springrestapi.common.annotation.ValidPostTitle;
 import org.restapi.springrestapi.dto.post.PatchPostRequest;
-import org.restapi.springrestapi.dto.post.RegisterPostRequest;
+import org.restapi.springrestapi.dto.post.CreatePostRequest;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -45,7 +45,6 @@ public class Post {
     private int viewCount;
 	private int commentCount;
 
-
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false, updatable = false)
     private User author;
@@ -60,33 +59,33 @@ public class Post {
 
 
     @PrePersist
-    public void prePersist() {
+    private void prePersist() {
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
-    /*
-    constructor=
-    - from(RegisterPostRequest)
-    - from(PatchPostRequest, Post)
-     */
-    public static Post from(RegisterPostRequest command) {
+    public static Post from(CreatePostRequest req) {
 		return Post.builder()
-                .title(command.title())
-                .content(command.content())
-                .thumbnailImageUrl(command.thumbnailImageUrl())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .title(req.title())
+                .content(req.content())
+                .thumbnailImageUrl(req.thumbnailImageUrl())
                 .build();
 	}
 
-	public static Post from(PatchPostRequest command, Post prevPost) {
-		return prevPost.toBuilder()
-                .title(command.title())
-                .content(command.content())
-                .thumbnailImageUrl(command.thumbnailImageUrl())
-                .updatedAt(LocalDateTime.now())
-                .build();
-	}
+    public void patch(PatchPostRequest req) {
+        if (req.title() != null) {
+            this.title = req.title();
+        }
+        if (req.content() != null) {
+            this.content = req.content();
+        }
+        if (req.removeThumbnailImage()) {
+            this.thumbnailImageUrl = null;
+        } else if (req.thumbnailImageUrl() != null) {
+            this.thumbnailImageUrl = req.thumbnailImageUrl();
+        }
+        this.updatedAt = LocalDateTime.now();
+    }
 
     public void changeAuthor(User newAuthor) {
         if (this.author != null) {

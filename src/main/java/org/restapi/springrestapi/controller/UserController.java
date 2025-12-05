@@ -7,17 +7,10 @@ import org.restapi.springrestapi.exception.code.SuccessCode;
 import org.restapi.springrestapi.security.CustomUserDetails;
 import org.restapi.springrestapi.service.user.UserService;
 import org.restapi.springrestapi.common.APIResponse;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -44,7 +37,7 @@ public class UserController {
 		@PathVariable Long id
 	) {
 		return ResponseEntity.ok()
-				.body(APIResponse.ok(SuccessCode.GET_SUCCESS, userService.getUserProfile(id)));
+                .body(APIResponse.ok(SuccessCode.GET_SUCCESS, userService.getUserProfile(id)));
 	}
 
 	@Operation(summary = "프로필 수정", description = "현재 로그인 사용자의 프로필 정보를 수정합니다.")
@@ -59,10 +52,8 @@ public class UserController {
 		@Valid @RequestBody PatchProfileRequest request,
         @AuthenticationPrincipal CustomUserDetails user
 	) {
-		final Long id = user.getId();
-		userService.updateProfile(id, request);
-		return ResponseEntity.ok(APIResponse.ok(
-			SuccessCode.PATCH_SUCCESS));
+		userService.updateProfile(user.getId(), request);
+		return ResponseEntity.ok(APIResponse.ok(SuccessCode.PATCH_SUCCESS));
 	}
 
 	@Operation(summary = "비밀번호 변경", description = "현재 로그인 사용자의 비밀번호를 변경합니다.")
@@ -71,14 +62,13 @@ public class UserController {
 		@ApiResponse(responseCode = "401", description = "인증 필요"),
 		@ApiResponse(responseCode = "400", description = "새 비밀번호와 확인 비밀번호 불일치")
 	})
-	@PatchMapping("/password")
+	@PutMapping("/password")
 	public ResponseEntity<APIResponse<Void>> changePassword(
 		@Valid @RequestBody ChangePasswordRequest request,
         @AuthenticationPrincipal CustomUserDetails user
 	) {
-		final Long id = user.getId();
-		userService.updatePasswod(id, request);
-		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+		userService.updatePasswod(user.getId(), request);
+		return ResponseEntity.noContent().build();
 	}
 
 	@Operation(summary = "회원 탈퇴", description = "현재 로그인 사용자를 삭제합니다.")
@@ -90,8 +80,7 @@ public class UserController {
 	public ResponseEntity<Void> deleteUser(
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-		final Long id = user.getId();
-		userService.deleteUser(id);
+		userService.deleteUser(user.getId());
 		return ResponseEntity.noContent().build();
 	}
 }

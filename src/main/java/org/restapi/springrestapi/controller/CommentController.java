@@ -4,7 +4,7 @@ import org.restapi.springrestapi.common.APIResponse;
 import org.restapi.springrestapi.dto.comment.CommentListResult;
 import org.restapi.springrestapi.dto.comment.CommentResult;
 import org.restapi.springrestapi.dto.comment.PatchCommentRequest;
-import org.restapi.springrestapi.dto.comment.RegisterCommentRequest;
+import org.restapi.springrestapi.dto.comment.CreateCommentRequest;
 import org.restapi.springrestapi.exception.code.SuccessCode;
 import org.restapi.springrestapi.security.CustomUserDetails;
 import org.restapi.springrestapi.service.comment.CommentService;
@@ -46,12 +46,11 @@ public class CommentController {
 	@PostMapping("/{postId}/comments")
 	public ResponseEntity<APIResponse<CommentResult>> createComment(
 		@PathVariable Long postId,
-		@RequestBody RegisterCommentRequest request,
+		@Valid @RequestBody CreateCommentRequest request,
         @AuthenticationPrincipal CustomUserDetails user
 	) {
-		final Long userId = user.getId();
 		return ResponseEntity.status(HttpStatus.CREATED)
-			.body(APIResponse.ok(SuccessCode.REGISTER_SUCCESS, commentService.registerComment(userId, request, postId)));
+			.body(APIResponse.ok(SuccessCode.REGISTER_SUCCESS, commentService.createComment(user.getId(), request, postId)));
 	}
 
 	@Operation(summary = "댓글 목록 조회", description = "특정 게시글의 댓글 목록을 조회합니다.")
@@ -100,7 +99,7 @@ public class CommentController {
         @AuthenticationPrincipal CustomUserDetails user
 	) {
 		final Long userId = user.getId();
-		commentService.deleteComment(userId, id, postId);
+		commentService.deleteComment(userId, postId, id);
 		return ResponseEntity.noContent().build();
 	}
 }

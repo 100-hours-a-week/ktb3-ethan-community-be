@@ -26,7 +26,7 @@ public class PostLikeService {
     private final PostFinder postFinder;
 
     public PatchPostLikeResult togglePostLike(Long userId, Long postId) {
-        userValidator.validateUserExists(userId);
+        userFinder.existsByIdOrThrow(userId);
         postValidator.validatePostExists(postId);
 
         final boolean wasLiked = postLikeRepository.existsByUserIdAndPostId(userId, postId);

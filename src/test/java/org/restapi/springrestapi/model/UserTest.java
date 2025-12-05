@@ -5,17 +5,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.restapi.springrestapi.dto.user.PatchProfileRequest;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 public class UserTest {
-    @Mock
-    PasswordEncoder passwordEncoder;
 
     User user;
 
@@ -63,6 +58,36 @@ public class UserTest {
         }
 
         @Test
+        @DisplayName("닉네임이 null이면 기존 닉네임을 유지한다")
+        void updateProfile_nullNickname_keepsOriginal() {
+            // given
+            String previous = user.getNickname();
+            PatchProfileRequest request =
+                    new PatchProfileRequest(null, "https://img", false);
+
+            // when
+            user.updateProfile(request);
+
+            // then
+            assertThat(user.getNickname()).isEqualTo(previous);
+            assertThat(user.getProfileImageUrl()).isEqualTo("https://img");
+        }
+
+        @Test
+        @DisplayName("프로필 이미지 저장경로 양끝에 포함된 공백은 trim 되어 저장된다")
+        void updateProfile_trimsNicknameAndImage() {
+            // given
+            PatchProfileRequest request =
+                    new PatchProfileRequest(null, "   https://img   ", false);
+
+            // when
+            user.updateProfile(request);
+
+            // then
+            assertThat(user.getProfileImageUrl()).isEqualTo("https://img");
+        }
+
+        @Test
         @DisplayName("removeProfileImage=true이면 기존의 프로필 이미지 경로는 삭제(null)된다. ")
         void updateProfile_should_remove_image_when_flag_is_true() {
             // given
@@ -75,6 +100,22 @@ public class UserTest {
             // then
             assertThat(user.getNickname()).isEqualTo(request.nickname());
             assertThat(user.getProfileImageUrl()).isNull();
+        }
+
+        @Test
+        @DisplayName("removeProfileImage=false이고 새 이미지가 null이면 기존 이미지를 유지한다")
+        void updateProfile_nullImage_keepsOriginal() {
+            // given
+            String previousImage = user.getProfileImageUrl();
+            PatchProfileRequest request =
+                    new PatchProfileRequest("newNickname", null, false);
+
+            // when
+            user.updateProfile(request);
+
+            // then
+            assertThat(user.getProfileImageUrl()).isEqualTo(previousImage);
+            assertThat(user.getNickname()).isEqualTo("newNickname");
         }
     }
 }

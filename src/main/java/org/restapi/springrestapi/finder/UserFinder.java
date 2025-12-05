@@ -40,8 +40,10 @@ public class UserFinder {
         return findByIdOrThrow(id, AuthErrorCode.UNAUTHORIZED);
     }
 
-	public boolean existsById(Long id) {
-		return userRepository.existsById(id);
+	public void existsByIdOrThrow(Long id) {
+		if (!userRepository.existsById(id)) {
+            throw new AppException(UserErrorCode.USER_NOT_FOUND);
+        }
 	}
 
 	public boolean existsByEmail(String email) {

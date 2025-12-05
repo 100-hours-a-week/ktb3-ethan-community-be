@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
-import org.restapi.springrestapi.common.annotation.ValidEmail;
 import org.restapi.springrestapi.common.annotation.ValidNickname;
 import org.restapi.springrestapi.dto.auth.SignUpRequest;
 import org.restapi.springrestapi.dto.user.EncodedPassword;
@@ -37,7 +36,6 @@ public class User {
     private String nickname;
 
     @Column(nullable = false)
-    @ValidEmail
     private String email;
 
     @Column(nullable = false)
@@ -59,11 +57,6 @@ public class User {
     @Builder.Default
     private List<Comment> comments = new ArrayList<>();
 
-    /*
-    constructor
-    - from(RegisterUserRequest, PasswordEncoder)
-     */
-
     @PrePersist
     private void prePersist() {
         this.joinAt = LocalDateTime.now();
@@ -81,18 +74,14 @@ public class User {
                 .build();
 	}
 
-    /*
-    setter
-    - updateProfile(PatchProfileRequest)
-    - updatePassword(String, PasswordEncoder)
-     */
-    public void updateProfile(PatchProfileRequest request) {
-        this.nickname = request.nickname();
-
-        if (request.removeProfileImage()) {
+    public void updateProfile(PatchProfileRequest req) {
+        if (req.nickname() != null) {
+            this.nickname = req.nickname().trim();
+        }
+        if (req.removeProfileImage()) {
             this.profileImageUrl = null;
-        } else if (request.profileImageUrl() != null){
-            this.profileImageUrl = request.profileImageUrl();
+        } else if (req.profileImageUrl() != null){
+            this.profileImageUrl = req.profileImageUrl().trim();
         }
     }
 

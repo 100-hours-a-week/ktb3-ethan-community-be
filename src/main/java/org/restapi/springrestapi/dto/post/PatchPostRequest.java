@@ -8,11 +8,9 @@ public record PatchPostRequest(
 	@ValidPostTitle
 	String title,
 
-	@NotBlank
 	String content,
 
-    @NotBlank
-	String thumbnailImageUrl
-) {
+	String thumbnailImageUrl,
 
-}
+    boolean removeThumbnailImage
+) { }

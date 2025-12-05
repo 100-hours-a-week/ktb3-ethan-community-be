@@ -79,7 +79,7 @@ public class AuthServiceImpl implements AuthService {
         String refreshToken = jwtProvider.resolveRefreshToken(request).get();
         Long userId = jwtProvider.getUserIdFromRefresh(refreshToken);
 
-        userValidator.validateUserExists(userId);
+        userFinder.existsByIdOrThrow(userId);
 
         String newAccess = jwtProvider.createAccessToken(userId);
 

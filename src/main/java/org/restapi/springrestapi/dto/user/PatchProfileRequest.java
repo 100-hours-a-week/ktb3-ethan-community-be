@@ -6,7 +6,6 @@ public record PatchProfileRequest(
         @ValidNickname
         String nickname,
 
-        // nullable
         String profileImageUrl,
 
         boolean removeProfileImage

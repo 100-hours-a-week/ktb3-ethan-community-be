@@ -27,7 +27,7 @@ jwt:
 
 app:
   data:
-    dir: ./data
+
   upload:
     base-dir: "./upload"              # 프로젝트루트/upload
     public-base-url: "http://localhost:8080/upload"

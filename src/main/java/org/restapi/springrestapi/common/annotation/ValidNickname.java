@@ -14,9 +14,8 @@ import jakarta.validation.constraints.Size;
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = {})
-@NotBlank(message = "닉네임은 필수입니다.")
 @Size(min = 2, max = 10, message = "닉네임은 2자 이상 10자 이하여야 합니다.")
-@Pattern(regexp = "\\S+", message = "닉네임에는 공백을 포함할 수 없습니다.")
+@Pattern(regexp = "^(?!\\s).*$", message = "닉네임은 공백으로 시작할 수 없습니다.")
 public @interface ValidNickname {
     String message() default "유효하지 않은 닉네임 형식입니다.";
     Class<?>[] groups() default {};

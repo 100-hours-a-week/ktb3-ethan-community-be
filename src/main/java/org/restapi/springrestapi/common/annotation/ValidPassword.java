@@ -14,7 +14,6 @@ import jakarta.validation.constraints.Size;
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = {})
-@NotBlank(message = "비밀번호는 필수입니다.")
 @Size(min = 8, max = 20, message = "비밀번호는 8자 이상 20자 이하여야 합니다.")
 @Pattern(
         regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()])[A-Za-z\\d!@#$%^&*()]{8,20}$",
