@@ -52,7 +52,8 @@ public class CommentController {
         @AuthenticationPrincipal CustomUserDetails principal
 	) {
 		return ResponseEntity.status(HttpStatus.CREATED)
-			.body(APIResponse.ok(SuccessCode.REGISTER_SUCCESS, commentService.createComment(principal.getId(), request, postId)));
+			.body(APIResponse.ok(SuccessCode.REGISTER_SUCCESS,
+				commentService.createComment(principal.getId(), request, postId)));
 	}
 
 

@@ -15,7 +15,6 @@ import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.repository.PostLikeRepository;
 import org.restapi.springrestapi.repository.PostRepository;
 import org.restapi.springrestapi.service.post.PostLikeService;
-import org.restapi.springrestapi.validator.PostValidator;
 import org.restapi.springrestapi.validator.UserValidator;
 
 import java.time.LocalDateTime;
@@ -31,8 +30,6 @@ class PostLikeServiceTest {
 
     @Mock PostRepository postRepository;
     @Mock PostLikeRepository postLikeRepository;
-    @Mock
-    PostValidator postValidator;
     @Mock
     UserValidator userValidator;
     @Mock UserFinder userFinder;
@@ -57,8 +54,8 @@ class PostLikeServiceTest {
         PatchPostLikeResult result = postLikeService.togglePostLike(userId, postId);
 
         // then
-        verify(userValidator).validateUserExists(userId);
-        verify(postValidator).validatePostExists(postId);
+        verify(userFinder).existsByIdOrThrow(userId);
+        verify(postFinder).existsByIdOrThrow(postId);
         verify(postRepository).decreaseLikeCount(postId);
         verify(postLikeRepository).delete(like);
 //        assertThat(result.isLiked()).isFalse();
@@ -82,8 +79,8 @@ class PostLikeServiceTest {
         PatchPostLikeResult result = postLikeService.togglePostLike(userId, postId);
 
         // then
-        verify(userValidator).validateUserExists(userId);
-        verify(postValidator).validatePostExists(postId);
+        verify(userFinder).existsByIdOrThrow(userId);
+        verify(postFinder).existsByIdOrThrow(postId);
         verify(postRepository).increaseLikeCount(postId);
         verify(postLikeRepository).save(any(PostLike.class));
 //        assertThat(result.isLiked()).isTrue();

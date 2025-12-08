@@ -16,6 +16,11 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  test:
+    context:
+      bean:
+        override:
+          enabled: true
 
 jwt:
   access:
@@ -26,8 +31,6 @@ jwt:
     secret: "refresh_token_key_that_should_not_be_upload_on_github_and_must_be_32chars_minimum_required"
 
 app:
-  data:
-
   upload:
     base-dir: "./upload"              # 프로젝트루트/upload
     public-base-url: "http://localhost:8080/upload"

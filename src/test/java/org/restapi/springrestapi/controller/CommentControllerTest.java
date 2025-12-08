@@ -10,18 +10,21 @@ import org.restapi.springrestapi.dto.comment.CreateCommentRequest;
 import org.restapi.springrestapi.dto.comment.PatchCommentRequest;
 import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.security.CustomUserDetails;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.Optional;
 import org.restapi.springrestapi.security.config.SecurityConfig;
 import org.restapi.springrestapi.security.jwt.JwtProvider;
+import org.restapi.springrestapi.service.CommentService;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.web.AuthenticationEntryPoint;
-import org.restapi.springrestapi.service.comment.CommentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.cors.CorsConfigurationSource;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -36,18 +39,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(SecurityConfig.class)
 class CommentControllerTest {
 
-    @Autowired
-    MockMvc mockMvc;
+    @Autowired MockMvc mockMvc;
+    @Autowired ObjectMapper objectMapper;
 
-    @Autowired
-    ObjectMapper objectMapper;
-
-    @MockitoBean
-    CommentService commentService;
-    @MockitoBean
-    JwtProvider jwtProvider;
-    @MockitoBean
-    AuthenticationEntryPoint authenticationEntryPoint;
+    @MockitoBean CommentService commentService;
+    @MockitoBean JwtProvider jwtProvider;
+    @MockitoBean CorsConfigurationSource corsConfigurationSource;
 
     CustomUserDetails principal;
     final long POST_ID = 1L, COMMENT_ID = 1L;
@@ -55,6 +52,8 @@ class CommentControllerTest {
     @BeforeEach
     void setUp() {
         principal = new CustomUserDetails(sampleUser(1L));
+        given(jwtProvider.resolveAccessToken(any(HttpServletRequest.class))).willReturn(Optional.empty());
+        given(jwtProvider.resolveRefreshToken(any(HttpServletRequest.class))).willReturn(Optional.empty());
     }
 
     @Test
