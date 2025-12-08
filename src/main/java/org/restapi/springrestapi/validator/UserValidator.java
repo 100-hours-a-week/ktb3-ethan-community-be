@@ -14,21 +14,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserValidator {
     private final UserFinder userFinder;
 
-
-    public void validateUserExists(Long id) {
-    }
-
     public void validateDuplicateEmail(String email) {
         if (userFinder.existsByEmail(email)) {
-            throw new AppException(UserErrorCode.EMAIL_CONFLICT);
+            throw new AppException(UserErrorCode.EMAIL_DUPLICATED);
         }
     }
 
     public void validateDuplicateNickname(String nickname) {
         if (userFinder.existsByNickName(nickname)) {
-            throw new AppException(UserErrorCode.NICKNAME_CONFLICT);
+            throw new AppException(UserErrorCode.NICKNAME_DUPLICATED);
         }
     }
+
     public void validateSignUpUser(String email, String nickname) {
         validateDuplicateEmail(email);
         validateDuplicateNickname(nickname);

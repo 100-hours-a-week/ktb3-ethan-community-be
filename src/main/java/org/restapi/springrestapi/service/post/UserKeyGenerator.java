@@ -1,4 +1,4 @@
-package org.restapi.springrestapi.service.auth;
+package org.restapi.springrestapi.service.post;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.util.DigestUtils;

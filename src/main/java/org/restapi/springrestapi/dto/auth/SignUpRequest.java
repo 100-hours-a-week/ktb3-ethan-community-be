@@ -9,19 +9,19 @@ import org.restapi.springrestapi.common.annotation.ValidPassword;
 public record SignUpRequest (
     @Email(message = "올바른 이메일 형식이 아닙니다.")
     @NotBlank(message = "이메일은 필수 입력값입니다.")
-    @Schema(description = "이메일", example = "test001@test.com")
+    @Schema(description = "이메일", example = "user@user.com")
     String email,
 
     @ValidPassword
     @NotBlank(message = "비밀번호는 필수 입력값입니다.")
-    @Schema(description = "비밀번호", example = "testTT1!")
+    @Schema(description = "비밀번호", example = "Password1!")
     String password,
 
     @ValidNickname
     @NotBlank(message = "닉네임은 필수 입력값입니다.")
-    @Schema(description = "닉네임", example = "test001")
+    @Schema(description = "닉네임", example = "nickname")
     String nickname,
 
-    @Schema(description = "프로필 이미지 url", example = "http://localhost:8080/upload/post/profileImage.jpg")
+    @Schema(description = "프로필 이미지 url", example = "http://localhost:8080/upload/profile/profileImage.jpg")
     String profileImageUrl
 ) {}

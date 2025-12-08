@@ -18,26 +18,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class CommentFinder {
 	private final CommentRepository commentRepository;
 
-	public Comment findById(Long id) {
+	public Comment findByIdOrThrow(Long id) {
 		return commentRepository.findById(id)
 			.orElseThrow(() -> new AppException(CommentErrorCode.COMMENT_NOT_FOUND));
 	}
 
     public Slice<Comment> findCommentSlice(Long postId, Long cursor, int limit) {
-        // check limit range
         final int SIZE = Math.max(Math.max(limit, 1), 10);
 
         if (cursor == null) {
             return commentRepository.findSlice(postId, PageRequest.of(0, SIZE));
         }
         return commentRepository.findSlice(postId, cursor, PageRequest.of(0, SIZE));
-    }
-
-	public boolean existsById(Long id) {
-		return commentRepository.findById(id).isPresent();
-	}
-
-    public boolean existsByIdAndUserId(Long id, Long userId) {
-        return commentRepository.existsByIdAndUserId(id, userId);
     }
 }

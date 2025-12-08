@@ -1,6 +1,6 @@
 package org.restapi.springrestapi.repository;
 
-import org.restapi.springrestapi.dto.post.PostSummary;
+import org.restapi.springrestapi.dto.post.PostResult;
 import org.restapi.springrestapi.model.Post;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,27 +13,22 @@ import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
+	@Query("""
+        SELECT p 
+        FROM Post p 
+        JOIN FETCH p.author
+        ORDER BY p.id DESC
+    """)
+	Slice<PostResult> findSlice(Pageable pageable);
 
-    @Query(
-        """
-        select new org.restapi.springrestapi.dto.post.PostSummary (
-                p.id, a.profileImageUrl, a.nickname, p.title, p.thumbnailImageUrl, p.likeCount, p.commentCount, p.viewCount, p.createdAt)
-        from Post p left join p.author a
-        order by p.id desc
-        """
-    )
-    Slice<PostSummary> findSlice(Pageable pageable);
-
-    @Query(
-            """
-            select new org.restapi.springrestapi.dto.post.PostSummary (
-                    p.id, a.profileImageUrl, a.nickname, p.title, p.thumbnailImageUrl, p.likeCount, p.commentCount, p.viewCount, p.createdAt)
-            from Post p left join p.author a
-            where p.id < :cursorId
-            order by p.id desc
-            """
-    )
-    Slice<PostSummary> findSlice(@Param("cursorId") Long cursorId, Pageable pageable);
+	@Query("""
+        SELECT p 
+        FROM Post p 
+        JOIN FETCH p.author 
+        WHERE p.id < :cursorId 
+        ORDER BY p.id DESC
+    """)
+	Slice<PostResult> findSlice(@Param("cursorId") Long cursorId, Pageable pageable);
 
     boolean existsByIdAndAuthorId(Long id, Long authorId);
 

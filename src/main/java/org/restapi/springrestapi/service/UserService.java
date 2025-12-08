@@ -1,4 +1,4 @@
-package org.restapi.springrestapi.service.user;
+package org.restapi.springrestapi.service;
 
 import org.restapi.springrestapi.dto.user.ChangePasswordRequest;
 import org.restapi.springrestapi.dto.user.EncodedPassword;
@@ -18,39 +18,33 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class UserServiceImpl implements UserService {
+public class UserService {
 	private final UserRepository userRepository;
 	private final UserFinder userFinder;
 	private final PasswordEncoder passwordEncoder;
 	private final UserValidator userValidator;
     private final AuthValidator authValidator;
 
-	@Override
 	public UserProfileResult getUserProfile(Long id) {
 		return UserProfileResult.from(userFinder.findByIdOrThrow(id));
 	}
 
-	@Override
-	public void updateProfile(Long id, PatchProfileRequest request) {
-		userValidator.validateDuplicateNickname(request.nickname());
+	public void updateProfile(Long id, PatchProfileRequest req) {
+		userValidator.validateDuplicateNickname(req.nickname());
 
 		User user = userFinder.findByIdOrThrow(id);
-		user.updateProfile(request);
+		user.updateProfile(req);
 
 		userRepository.save(user);
 	}
 
-	@Override
-	public void updatePasswod(Long id, ChangePasswordRequest request) {
-        authValidator.validateNewPassword(request.password(), request.confirmPassword());
-		User user = userFinder.findByIdOrThrow(id);
-
-		user.updatePassword(new EncodedPassword(passwordEncoder.encode(request.password())));
+	public void updatePassword(User user, ChangePasswordRequest req) {
+        authValidator.validateNewPassword(req, user.getPassword());
+		user.updatePassword(new EncodedPassword(passwordEncoder.encode(req.password())));
 
 		userRepository.save(user);
 	}
 
-	@Override
 	public void deleteUser(Long id) {
         userRepository.deleteById(id);
 	}

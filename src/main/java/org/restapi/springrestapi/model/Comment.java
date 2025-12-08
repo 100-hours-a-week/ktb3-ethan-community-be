@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.restapi.springrestapi.dto.comment.CreateCommentRequest;
+import org.restapi.springrestapi.dto.comment.PatchCommentRequest;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -52,11 +53,9 @@ public class Comment {
         return comment;
 	}
 
-	public void updateContent(String newContent) {
-		if (newContent != null) {
-			this.content = newContent;
-            this.updatedAt = LocalDateTime.now();
-		}
+	public void updateContent(PatchCommentRequest req) {
+		this.content = req.content();
+		this.updatedAt = LocalDateTime.now();
 	}
 
     public void changePost(Post newPost) {
@@ -86,5 +85,4 @@ public class Comment {
             newUser.getComments().add(this);
         }
     }
-
 }

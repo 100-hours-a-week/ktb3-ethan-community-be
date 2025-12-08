@@ -1,4 +1,4 @@
-package org.restapi.springrestapi.service.comment;
+package org.restapi.springrestapi.service;
 
 import java.util.List;
 
@@ -6,17 +6,14 @@ import org.restapi.springrestapi.dto.comment.CommentListResult;
 import org.restapi.springrestapi.dto.comment.CommentResult;
 import org.restapi.springrestapi.dto.comment.PatchCommentRequest;
 import org.restapi.springrestapi.dto.comment.CreateCommentRequest;
+import org.restapi.springrestapi.exception.AppException;
+import org.restapi.springrestapi.exception.code.CommentErrorCode;
 import org.restapi.springrestapi.finder.CommentFinder;
 import org.restapi.springrestapi.finder.PostFinder;
 import org.restapi.springrestapi.finder.UserFinder;
 import org.restapi.springrestapi.model.Comment;
-import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.repository.CommentRepository;
-import org.restapi.springrestapi.model.Post;
 import org.restapi.springrestapi.repository.PostRepository;
-import org.restapi.springrestapi.validator.CommentValidator;
-import org.restapi.springrestapi.validator.PostValidator;
-import org.restapi.springrestapi.validator.UserValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,34 +22,29 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class CommentServiceImpl implements CommentService {
+public class CommentService {
 	private final CommentRepository commentRepository;
     private final PostRepository postRepository;
 
+	private final PostFinder postFinder;
+	private final UserFinder userFinder;
 	private final CommentFinder commentFinder;
-	private final CommentValidator commentValidator;
-    private final PostFinder postFinder;
-    private final PostValidator postValidator;
-    private final UserFinder userFinder;
-    private final UserValidator userValidator;
 
-    @Override
 	public CommentResult createComment(Long userId, CreateCommentRequest request, Long postId) {
-        userFinder.existsByIdOrThrow(userId);
-        postValidator.validatePostExists(postId);
+		postFinder.existsByIdOrThrow(postId);
 
-        User user = userFinder.findProxyById(userId);
-        Post post = postFinder.findProxyById(postId);
-		Comment comment = Comment.from(request, user, post);
+		Comment comment = Comment.from(request,
+			userFinder.findProxyById(userId),
+			postFinder.findProxyById(postId)
+		);
 
         postRepository.increaseCommentCount(postId);
 
 		return CommentResult.from(commentRepository.save(comment));
 	}
 
-	@Override
 	public CommentListResult getCommentList(Long postId, Long cursor, int limit) {
-		postValidator.validatePostExists(postId);
+		postFinder.existsByIdOrThrow(postId);
 
 		List<Comment> commentList = commentFinder.findCommentSlice(postId, cursor, limit).getContent();
 
@@ -70,27 +62,30 @@ public class CommentServiceImpl implements CommentService {
         return (int) Math.max(lastIdDesc, 0) + 1;
     }
 
-	@Override
 	public CommentResult updateComment(Long userId, PatchCommentRequest request, Long postId, Long id) {
-        postValidator.validatePostExists(postId);
-        commentValidator.validateOwner(id, userId);
+		Comment comment = commentFinder.findByIdOrThrow(id);
+		validatePermission(comment, userId, postId);
 
-		Comment comment = commentFinder.findById(id);
-		comment.updateContent(request.content());
+		comment.updateContent(request);
 
-		return CommentResult.from(commentRepository.save(comment));
+		return CommentResult.from(comment);
 	}
 
-	@Override
 	public void deleteComment(Long userId, Long postId, Long id) {
-        userFinder.existsByIdOrThrow(userId);
-        postValidator.validatePostExists(postId);
-        commentValidator.validateCommentExists(id);
-        commentValidator.validateOwner(id, userId);
-
-        (commentFinder.findById(id)).changePost(null);
+		Comment comment = commentFinder.findByIdOrThrow(id);
+		validatePermission(comment, userId, postId);
 
         postRepository.decreaseCommentCount(postId);
 		commentRepository.deleteById(id);
+	}
+
+	private void validatePermission(Comment comment, Long authorId, Long postId) {
+		if (!comment.getUser().getId().equals(authorId)) {
+			throw new AppException(CommentErrorCode.NOT_COMMENT_OWNER);
+		}
+
+		if (!comment.getPost().getId().equals(postId)) {
+			throw new AppException(CommentErrorCode.COMMENT_NOT_BELONG_TO_POST);
+		}
 	}
 }

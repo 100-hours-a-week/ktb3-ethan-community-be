@@ -45,13 +45,9 @@ public class Post {
     private int viewCount;
 	private int commentCount;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, updatable = false)
     private User author;
-
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<PostLike> likes = new ArrayList<>();
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -64,15 +60,18 @@ public class Post {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public static Post from(CreatePostRequest req) {
-		return Post.builder()
+    public static Post from(CreatePostRequest req, User author) {
+		Post post =  Post.builder()
                 .title(req.title())
                 .content(req.content())
                 .thumbnailImageUrl(req.thumbnailImageUrl())
                 .build();
+
+		post.changeAuthor(author);
+		return post;
 	}
 
-    public void patch(PatchPostRequest req) {
+    public void update(PatchPostRequest req) {
         if (req.title() != null) {
             this.title = req.title();
         }

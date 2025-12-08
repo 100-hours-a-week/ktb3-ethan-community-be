@@ -6,10 +6,10 @@ import lombok.Builder;
 
 @Builder
 public record PostListResult(
-	List<PostSummary> posts,
+	List<PostResult> posts,
 	long nextCursor
 ) {
-	public static PostListResult from(List<PostSummary> posts, long nextCursor) {
+	public static PostListResult from(List<PostResult> posts, long nextCursor) {
 		return PostListResult.builder()
 			.posts(posts)
 			.nextCursor(nextCursor)

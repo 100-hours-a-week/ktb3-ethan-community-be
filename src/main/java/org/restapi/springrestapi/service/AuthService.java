@@ -1,4 +1,4 @@
-package org.restapi.springrestapi.service.auth;
+package org.restapi.springrestapi.service;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.restapi.springrestapi.dto.auth.*;
@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class AuthServiceImpl implements AuthService {
+public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
@@ -35,7 +35,6 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final UserFinder userFinder;
 
-    @Override
     @Transactional(readOnly = true)
 	public LoginResult login(LoginRequest loginRequest) {
         try {
@@ -57,7 +56,6 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    @Override
     public LoginResult signup(SignUpRequest signUpRequest) {
         userValidator.validateSignUpUser(signUpRequest.email(), signUpRequest.nickname());
 
@@ -74,7 +72,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
 
-    @Override
     public RefreshTokenResult refresh(HttpServletRequest request) {
         String refreshToken = jwtProvider.resolveRefreshToken(request).get();
         Long userId = jwtProvider.getUserIdFromRefresh(refreshToken);

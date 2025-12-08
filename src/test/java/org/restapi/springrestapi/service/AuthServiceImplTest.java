@@ -12,11 +12,11 @@ import org.restapi.springrestapi.dto.auth.LoginResult;
 import org.restapi.springrestapi.dto.auth.RefreshTokenResult;
 import org.restapi.springrestapi.dto.auth.SignUpRequest;
 import org.restapi.springrestapi.exception.AppException;
+import org.restapi.springrestapi.finder.UserFinder;
 import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.repository.UserRepository;
 import org.restapi.springrestapi.security.CustomUserDetails;
 import org.restapi.springrestapi.security.jwt.JwtProvider;
-import org.restapi.springrestapi.service.auth.AuthServiceImpl;
 import org.restapi.springrestapi.validator.UserValidator;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,14 +38,29 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class AuthServiceImplTest {
 
-    @Mock AuthenticationManager authenticationManager;
-    @Mock JwtProvider jwtProvider;
-    @Mock PasswordEncoder passwordEncoder;
+    @Mock
+	AuthenticationManager authenticationManager;
+
+    @Mock
+	JwtProvider jwtProvider;
+
+    @Mock
+	PasswordEncoder passwordEncoder;
+
     @Mock
     UserValidator userValidator;
-    @Mock UserRepository userRepository;
 
-    @InjectMocks AuthServiceImpl authService;
+	@Mock
+	UserFinder userFinder;
+
+    @Mock
+	UserRepository userRepository;
+
+	@Mock
+	HttpServletRequest request;
+
+    @InjectMocks
+	AuthService authService;
 
     @Test
     @DisplayName("로그인 성공 시 토큰과 쿠키를 생성해 반환한다")
@@ -108,23 +123,22 @@ class AuthServiceImplTest {
     }
 
     @Test
-    @DisplayName("리프레시 토큰 갱신 시 사용자 존재를 검증하고 새 토큰/쿠키를 발급한다")
+    @DisplayName("리프레시 토큰(RT) 갱신 시 사용자 존재를 검증하고 새 토큰(AT)/쿠키(RT)를 발급한다")
     void refreshToken_success_returnsNewTokens() {
         // given
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        given(jwtProvider.resolveRefreshToken(request)).willReturn(Optional.of("refresh"));
-        given(jwtProvider.getUserIdFromRefresh("refresh")).willReturn(5L);
-        given(jwtProvider.createAccessToken(5L)).willReturn("access2");
-        given(jwtProvider.createRefreshToken(5L)).willReturn("refresh2");
-        ResponseCookie cookie = ResponseCookie.from("refresh", "another").build();
-        given(jwtProvider.createRefreshCookie("refresh2")).willReturn(cookie);
+        given(jwtProvider.resolveRefreshToken(request)).willReturn(Optional.of("oldRT"));
+        given(jwtProvider.getUserIdFromRefresh("oldRT")).willReturn(1L);
+        given(jwtProvider.createAccessToken(1L)).willReturn("newAT");
+        given(jwtProvider.createRefreshToken(1L)).willReturn("newRT");
+        ResponseCookie cookie = ResponseCookie.from("refresh", "newRT").build();
+        given(jwtProvider.createRefreshCookie("newRT")).willReturn(cookie);
 
         // when
         RefreshTokenResult result = authService.refresh(request);
 
         // then
-        verify(userValidator).validateUserExists(5L);
-        assertThat(result.accessToken()).isEqualTo("access2");
+        verify(userFinder).existsByIdOrThrow(1L);
+        assertThat(result.accessToken()).isEqualTo("newAT");
         assertThat(result.refreshCookie()).isEqualTo(cookie);
     }
 

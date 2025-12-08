@@ -1,11 +1,10 @@
 package org.restapi.springrestapi.finder;
 
-import org.restapi.springrestapi.dto.post.PostSummary;
+import org.restapi.springrestapi.dto.post.PostResult;
 import org.restapi.springrestapi.exception.AppException;
-import org.restapi.springrestapi.exception.code.ErrorCode;
+import org.restapi.springrestapi.exception.code.CommentErrorCode;
 import org.restapi.springrestapi.exception.code.PostErrorCode;
 import org.restapi.springrestapi.model.Post;
-import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.repository.PostLikeRepository;
 import org.restapi.springrestapi.repository.PostRepository;
 import org.springframework.data.domain.PageRequest;
@@ -31,7 +30,7 @@ public class PostFinder {
                 .orElseThrow(() -> new AppException(PostErrorCode.POST_NOT_FOUND));
     }
 
-    public Slice<PostSummary> findPostSummarySlice(Long cursor, int limit) {
+    public Slice<PostResult> findPostSummarySlice(Long cursor, int limit) {
 
         // check limit range
         final int SIZE = Math.min(Math.max(limit, 1), 10);
@@ -41,18 +40,16 @@ public class PostFinder {
         return postRepository.findSlice(cursor, PageRequest.of(0, SIZE));
     }
 
-	public boolean existsById(Long id) {
-		return postRepository.existsById(id);
+	public void existsByIdOrThrow(Long id) {
+		if (!postRepository.existsById(id)) {
+			throw new AppException(CommentErrorCode.COMMENT_NOT_FOUND);
+		}
 	}
 
-    public boolean existsByIdAndAuthorId(Long postId, Long authorId) {
-        return postRepository.existsByIdAndAuthorId(postId, authorId);
-    }
-
-    public boolean isDidLikeUser(Long postId, Long userIdOrNull) {
-        if (userIdOrNull == null) {
-            return false;
-        }
-        return postLikeRepository.existsByUserIdAndPostId(userIdOrNull, postId);
-    }
+	public boolean isDidLikeUser(Long postId, Long userIdOrNull) {
+		if (userIdOrNull == null) {
+			return false;
+		}
+		return postLikeRepository.existsByUserIdAndPostId(userIdOrNull, postId);
+	}
 }
