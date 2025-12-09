@@ -147,5 +147,16 @@ class AuthServiceTest {
             assertThat(result.accessToken()).isEqualTo("new-access");
             assertThat(result.refreshCookie()).isEqualTo(cookie);
         }
+
+        @Test
+        @DisplayName("refresh 토큰이 없으면 REFRESH_COOKIE_MISSING 예외를 던진다")
+        void refresh_missingToken_throws() {
+            HttpServletRequest request = mock(HttpServletRequest.class);
+            given(jwtProvider.resolveRefreshToken(request)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> authService.refresh(request))
+                .isInstanceOf(AppException.class)
+                .hasMessage(AuthErrorCode.REFRESH_COOKIE_MISSING.getMessage());
+        }
     }
 }
