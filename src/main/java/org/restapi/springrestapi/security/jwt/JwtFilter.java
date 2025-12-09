@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.restapi.springrestapi.exception.AppException;
 import org.restapi.springrestapi.exception.AuthException;
 import org.restapi.springrestapi.exception.code.AuthErrorCode;
 import org.springframework.security.core.AuthenticationException;
@@ -34,7 +35,16 @@ public class JwtFilter extends OncePerRequestFilter {
 
             // refresh 엔드포인트 통과
             if (JwtProvider.REFRESH_PATH.equals(request.getRequestURI())) {
-                String refreshToken = jwtProvider.resolveRefreshToken(request).get();
+                Optional<String> refreshTokenOpt;
+                try {
+                    refreshTokenOpt = jwtProvider.resolveRefreshToken(request);
+                } catch (AppException ex) {
+                    throw new AuthException(ex.getErrorCode());
+                }
+                if (refreshTokenOpt.isEmpty()) {
+                    throw new AuthException(AuthErrorCode.REFRESH_COOKIE_MISSING);
+                }
+                String refreshToken = refreshTokenOpt.get();
 
                 if (!jwtProvider.validateRefreshToken(refreshToken)) {
                     // refresh가 있는데 invalid → 재로그인 필요
