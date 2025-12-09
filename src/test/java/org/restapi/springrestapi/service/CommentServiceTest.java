@@ -20,12 +20,13 @@ import org.restapi.springrestapi.model.Post;
 import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.repository.CommentRepository;
 import org.restapi.springrestapi.repository.PostRepository;
+import org.restapi.springrestapi.support.fixture.CommentFixture;
+import org.restapi.springrestapi.support.fixture.PostFixture;
 import org.restapi.springrestapi.support.fixture.UserFixture;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,9 +56,9 @@ public class CommentServiceTest {
         Long userId = 1L;
         Long postId = 1L;
         CreateCommentRequest request = new CreateCommentRequest("첫 댓글");
-        User author = UserFixture.persistedUser().toBuilder().id(userId).build();
-        Post post = samplePost(postId, author);
-        Comment savedComment = sampleComment(1L, author, post);
+        User author = UserFixture.persistedUser(userId);
+        Post post = PostFixture.persistedPost(postId, author);
+        Comment savedComment = CommentFixture.persistedComment(1L, author, post);
 
         given(userFinder.findProxyById(userId)).willReturn(author);
         given(postFinder.findProxyById(postId)).willReturn(post);
@@ -79,9 +80,9 @@ public class CommentServiceTest {
     void getCommentList_returnsDtoListAndNextCursor() {
 		// given
         Long postId = 1L;
-		Post post = samplePost(postId, UserFixture.persistedUser().toBuilder().id(1L).build());
-        Comment first = sampleComment(1L, sampleUser(2L), post);
-        Comment second = sampleComment(2L, sampleUser(3L), post);
+		Post post = PostFixture.persistedPost(postId, UserFixture.persistedUser(1L));
+        Comment first = CommentFixture.persistedComment(1L, UserFixture.persistedUser(2L), post);
+        Comment second = CommentFixture.persistedComment(2L, UserFixture.persistedUser(3L), post);
         Slice<Comment> slice = new SliceImpl<>(List.of(first, second), PageRequest.of(0, 2), false);
         given(commentFinder.findCommentSlice(postId, null, 2)).willReturn(slice);
 
@@ -115,7 +116,11 @@ public class CommentServiceTest {
         Long postId = 7L;
         Long commentId = 3L;
         PatchCommentRequest request = new PatchCommentRequest("수정된 내용");
-        Comment comment = sampleComment(commentId, sampleUser(userId), samplePost(postId, sampleUser(9L)));
+        Comment comment = CommentFixture.persistedComment(
+            commentId,
+            UserFixture.persistedUser(userId),
+            PostFixture.persistedPost(postId, UserFixture.persistedUser(9L))
+        );
         given(commentFinder.findByIdOrThrow(commentId)).willReturn(comment);
 
         CommentResult result = commentService.updateComment(userId, request, postId, commentId);
@@ -128,7 +133,11 @@ public class CommentServiceTest {
     @DisplayName("작성자가 아니면 댓글 수정 시 예외가 발생한다")
     void updateComment_throwsWhenNotAuthor() {
         Long commentId = 3L;
-        Comment comment = sampleComment(commentId, sampleUser(20L), samplePost(2L, sampleUser(30L)));
+        Comment comment = CommentFixture.persistedComment(
+            commentId,
+            UserFixture.persistedUser(20L),
+            PostFixture.persistedPost(2L, UserFixture.persistedUser(30L))
+        );
         given(commentFinder.findByIdOrThrow(commentId)).willReturn(comment);
 
         assertThatThrownBy(() -> commentService.updateComment(1L, new PatchCommentRequest("수정"), 2L, commentId))
@@ -142,7 +151,11 @@ public class CommentServiceTest {
         Long userId = 5L;
         Long postId = 8L;
         Long commentId = 12L;
-        Comment comment = sampleComment(commentId, sampleUser(userId), samplePost(postId, sampleUser(9L)));
+        Comment comment = CommentFixture.persistedComment(
+            commentId,
+            UserFixture.persistedUser(userId),
+            PostFixture.persistedPost(postId, UserFixture.persistedUser(9L))
+        );
         given(commentFinder.findByIdOrThrow(commentId)).willReturn(comment);
 
         commentService.deleteComment(userId, postId, commentId);
@@ -155,7 +168,11 @@ public class CommentServiceTest {
     @DisplayName("작성자가 아니면 댓글 삭제 시 예외가 발생한다")
     void deleteComment_throwsWhenNotAuthor() {
         Long commentId = 12L;
-        Comment comment = sampleComment(commentId, sampleUser(20L), samplePost(8L, sampleUser(30L)));
+        Comment comment = CommentFixture.persistedComment(
+            commentId,
+            UserFixture.persistedUser(20L),
+            PostFixture.persistedPost(8L, UserFixture.persistedUser(30L))
+        );
         given(commentFinder.findByIdOrThrow(commentId)).willReturn(comment);
 
         assertThatThrownBy(() -> commentService.deleteComment(1L, 8L, commentId))
@@ -164,34 +181,4 @@ public class CommentServiceTest {
         verify(commentRepository, never()).deleteById(anyLong());
     }
 
-    private Post samplePost(Long id, User author) {
-        return Post.builder()
-            .id(id)
-            .title("title" + id)
-            .content("content" + id)
-            .thumbnailImageUrl("thumb" + id)
-            .createdAt(LocalDateTime.now().minusDays(2))
-            .updatedAt(LocalDateTime.now().minusDays(1))
-            .author(author)
-            .build();
-    }
-
-    private User sampleUser(Long id) {
-        return UserFixture.persistedUser().toBuilder()
-            .id(id)
-            .nickname("user" + id)
-            .build();
-    }
-
-    private Comment sampleComment(Long id, User user, Post post) {
-        Comment comment = Comment.builder()
-            .id(id)
-            .content("comment" + id)
-            .createdAt(LocalDateTime.now().minusDays(1))
-            .updatedAt(LocalDateTime.now().minusHours(3))
-            .build();
-        comment.changeUser(user);
-        comment.changePost(post);
-        return comment;
-    }
 }

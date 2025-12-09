@@ -26,4 +26,17 @@ public final class CommentFixture {
         }
         return comment;
     }
+
+    public static Comment persistedComment(Long id, User user, Post post) {
+        Comment comment = persistedComment(user, post).toBuilder()
+            .id(id)
+            .build();
+        if (user != null) {
+            comment.changeUser(user);
+        }
+        if (post != null) {
+            comment.changePost(post);
+        }
+        return comment;
+    }
 }

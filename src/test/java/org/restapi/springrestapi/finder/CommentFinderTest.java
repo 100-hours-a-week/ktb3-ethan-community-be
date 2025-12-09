@@ -35,7 +35,7 @@ class CommentFinderTest {
     CommentRepository commentRepository;
 
     @Test
-    @DisplayName("findCommentSlice enforces minimum size when cursor missing")
+    @DisplayName("커서가 없으면 페이지 크기를 최소 값으로 보정한다")
     void findCommentSlice_withoutCursorEnforcesMinimumPageSize() {
         Slice<Comment> slice = new SliceImpl<>(List.of(), PageRequest.of(0, 10), false);
         given(commentRepository.findSlice(eq(1L), any(PageRequest.class))).willReturn(slice);
@@ -49,7 +49,7 @@ class CommentFinderTest {
     }
 
     @Test
-    @DisplayName("findCommentSlice keeps large size when cursor exists")
+    @DisplayName("커서가 있으면 요청한 페이지 크기를 그대로 사용한다")
     void findCommentSlice_withCursorKeepsLargePageSize() {
         Slice<Comment> slice = new SliceImpl<>(List.of(), PageRequest.of(0, 15), false);
         given(commentRepository.findSlice(eq(1L), eq(50L), any(PageRequest.class))).willReturn(slice);
@@ -63,7 +63,7 @@ class CommentFinderTest {
     }
 
     @Test
-    @DisplayName("findByIdOrThrow emits COMMENT_NOT_FOUND when missing")
+    @DisplayName("댓글이 존재하지 않으면 COMMENT_NOT_FOUND 예외를 던진다")
     void findByIdOrThrow_throwsWhenCommentMissing() {
         given(commentRepository.findById(77L)).willReturn(Optional.empty());
 
@@ -73,7 +73,7 @@ class CommentFinderTest {
     }
 
     @Test
-    @DisplayName("findByIdOrThrow returns repository entity when present")
+    @DisplayName("댓글이 존재하면 Repository 결과를 그대로 반환한다")
     void findByIdOrThrow_returnsCommentWhenPresent() {
         Comment comment = Comment.builder().id(12L).content("content").build();
         given(commentRepository.findById(12L)).willReturn(Optional.of(comment));
