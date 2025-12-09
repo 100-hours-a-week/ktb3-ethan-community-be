@@ -3,8 +3,6 @@ package org.restapi.springrestapi.common;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
-import jakarta.validation.ValidatorFactory;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -17,18 +15,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ValidPostTitleTest {
 
-    private Validator validator;
+    private static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
 
     record TestDto(
             @ValidPostTitle
             String title
     ) {}
 
-    @BeforeEach
-    void setUp() {
-        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        validator = factory.getValidator();
-    }
     @Test
     @DisplayName("공백을 포함한 정상적인 게시글 제목은 허용한다.")
     void valid_title_pass() {
@@ -36,7 +29,7 @@ public class ValidPostTitleTest {
         TestDto dto = new TestDto("공백을 포함한 게시글 제목");
 
         // when
-        Set<ConstraintViolation<TestDto>> violations = validator.validate(dto);
+        Set<ConstraintViolation<TestDto>> violations = VALIDATOR.validate(dto);
 
         // then
         assertThat(violations).isEmpty();
@@ -49,7 +42,7 @@ public class ValidPostTitleTest {
         TestDto dto = new TestDto(null);
 
         // when
-        Set<ConstraintViolation<TestDto>> violations = validator.validate(dto);
+        Set<ConstraintViolation<TestDto>> violations = VALIDATOR.validate(dto);
 
         // then
         assertThat(violations).isEmpty();
@@ -63,7 +56,7 @@ public class ValidPostTitleTest {
         TestDto dto = new TestDto(invalidTitle);
 
         // when
-        Set<ConstraintViolation<TestDto>> violations = validator.validate(dto);
+        Set<ConstraintViolation<TestDto>> violations = VALIDATOR.validate(dto);
 
         // then
         assertThat(violations).isNotEmpty();
@@ -79,7 +72,7 @@ public class ValidPostTitleTest {
         TestDto dto = new TestDto(longTitle);
 
         // when
-        Set<ConstraintViolation<TestDto>> violations = validator.validate(dto);
+        Set<ConstraintViolation<TestDto>> violations = VALIDATOR.validate(dto);
 
         // then
         assertThat(violations).isNotEmpty();
@@ -95,7 +88,7 @@ public class ValidPostTitleTest {
         TestDto dto = new TestDto(maxTitle);
 
         // when
-        Set<ConstraintViolation<TestDto>> violations = validator.validate(dto);
+        Set<ConstraintViolation<TestDto>> violations = VALIDATOR.validate(dto);
 
         // then
         assertThat(violations).isEmpty();

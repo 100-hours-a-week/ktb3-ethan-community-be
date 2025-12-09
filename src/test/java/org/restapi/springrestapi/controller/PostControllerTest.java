@@ -1,11 +1,9 @@
 package org.restapi.springrestapi.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.restapi.springrestapi.controller.support.ControllerTestSupport;
 import org.restapi.springrestapi.dto.post.CreatePostRequest;
 import org.restapi.springrestapi.dto.post.PatchPostRequest;
 import org.restapi.springrestapi.dto.post.PostListResult;
@@ -13,30 +11,19 @@ import org.restapi.springrestapi.dto.post.PostResult;
 import org.restapi.springrestapi.exception.code.SuccessCode;
 import org.restapi.springrestapi.security.CustomUserDetails;
 import org.restapi.springrestapi.security.config.SecurityConfig;
-import org.restapi.springrestapi.security.jwt.JwtFilter;
-import org.restapi.springrestapi.security.jwt.JwtProvider;
 import org.restapi.springrestapi.service.post.PostLikeService;
 import org.restapi.springrestapi.service.post.PostService;
 import org.restapi.springrestapi.support.fixture.UserFixture;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.cors.CorsConfigurationSource;
-
-import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -47,33 +34,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(PostController.class)
 @Import(SecurityConfig.class)
-class PostControllerTest {
-
-    @Autowired MockMvc mockMvc;
-    @Autowired ObjectMapper objectMapper;
+class PostControllerTest extends ControllerTestSupport {
 
     @MockitoBean PostService postService;
     @MockitoBean PostLikeService postLikeService;
-    @MockitoBean JwtProvider jwtProvider;
-    @MockitoBean JwtFilter jwtFilter;
 
     CustomUserDetails principal;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         principal = new CustomUserDetails(UserFixture.persistedUser(1L));
-
-        given(jwtProvider.resolveAccessToken(any(HttpServletRequest.class))).willReturn(Optional.empty());
-        given(jwtProvider.resolveRefreshToken(any(HttpServletRequest.class))).willReturn(Optional.empty());
-
-        doAnswer(invocation -> {
-            HttpServletRequest req = invocation.getArgument(0);
-            HttpServletResponse res = invocation.getArgument(1);
-            FilterChain chain = invocation.getArgument(2);
-
-            chain.doFilter(req, res);
-            return null;
-        }).when(jwtFilter).doFilter(any(), any(), any());
     }
 
     @Test
@@ -86,7 +56,7 @@ class PostControllerTest {
         mockMvc.perform(post("/posts")
                 .with(SecurityMockMvcRequestPostProcessors.user(principal))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(GSON.toJson(request)))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.data.id").value(10));
 
@@ -150,7 +120,7 @@ class PostControllerTest {
         mockMvc.perform(patch("/posts/{id}", 3L)
                 .with(SecurityMockMvcRequestPostProcessors.user(principal))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(GSON.toJson(request)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value(SuccessCode.PATCH_SUCCESS.getCode()));
 

@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.restapi.springrestapi.exception.code.AuthErrorCode;
 import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.repository.UserRepository;
-import org.restapi.springrestapi.security.jwt.JwtFilter;
 import org.restapi.springrestapi.security.jwt.JwtProvider;
 import org.restapi.springrestapi.support.fixture.UserFixture;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,8 +33,7 @@ class AuthApiIntegrationTest {
     @Autowired MockMvc mockMvc;
     @Autowired UserRepository userRepository;
     @Autowired JwtProvider jwtProvider;
-    @Autowired
-    JwtFilter jwtFilter;
+
     @Test
     @DisplayName("유효한 리프레시 쿠키로 /auth/refresh 요청 시 새 토큰과 쿠키를 반환한다")
     void refresh_returnsNewTokens() throws Exception {

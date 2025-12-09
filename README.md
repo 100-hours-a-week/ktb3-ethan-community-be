@@ -33,25 +33,15 @@
 
 ### 프로젝트 실행 및 주요 경로
 
-1) 애플리케이션 실행
-- IDE: `SpringRestApiApplication` 실행
-- Gradle: `./gradlew bootRun`
-
-
-- 주의: JWT 시크릿은 실제 배포 시 환경변수/외부 설정으로 교체하세요.
-- `ddl-auto: update`는 개발 편의용입니다(운영 비권장).
-
-<br>
-
-
-2) API 문서 
-- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
-
-<br>
-
-3) 파일 업로드 저장소
-- 기본 경로: 프로젝트 루트의 `upload/`
-- 공개 URL 기본값: `http://localhost:8080/upload`
+1. **애플리케이션 실행**
+   - IDE: `SpringRestApiApplication`
+   - Gradle: `./gradlew bootRun`
+   - JWT 시크릿은 운영 환경에서 외부 설정으로 교체하고, `ddl-auto: update`는 개발 전용으로 사용하세요.
+2. **API 문서**
+   - Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+3. **파일 업로드 저장소**
+   - 기본 경로: 프로젝트 루트 `upload/`
+   - 공개 URL: `http://localhost:8080/upload`
 
 ---
 
@@ -73,16 +63,27 @@
 
 ### 인증/보안 개요
 - 세션리스(stateless) 구성: `SessionCreationPolicy.STATELESS`
-- CSRF: 활성화 + `CookieCsrfTokenRepository` (HttpOnly=false, Secure=true)
-    - 예외 경로: `/auth/login`, `/auth/signup`
-    - 프론트엔드에서 CSRF 토큰을 헤더로 전송해야 함
-    - 필요시 `/csrf`로 CSRF 토큰 요청 가능
-- CORS: `CorsConfig`를 통해 허용 도메인/메서드/헤더 설정
+- CSRF: `/auth/refresh`에만 보호 적용 (Double Submit Cookie 방식)
+    - JWT + RTR(Refresh Token Rotation) 전략을 사용하므로, 엑세스 토큰 재발급 요청은 CSRF 공격에 취약할 수 있습니다.
+    - 서버는 `CookieCsrfTokenRepository`로 `XSRF-TOKEN` 쿠키를 발급하고, 클라이언트는 같은 값을 `X-XSRF-TOKEN` 헤더로 전송해 Double Submit을 통과해야 `/auth/refresh` 요청이 성공합니다.
 - JWT
-  - 토큰이 존재할 경우 유효해야하는 사용자로 판별, 인증 수행
-  - Access Token: Authorization 헤더(`Bearer <token>`)로 전송
-  - Refresh Token: 서버가 `HttpOnly, Secure` 쿠키로 발급/갱신
+  - Access Token: Authorization 헤더(`Bearer <token>`)
+  - Refresh Token: HttpOnly + Secure 쿠키로 발급되며, RTR 전략으로 매번 갱신
 
----
+## 테스트 철학 및 성능 노트
 
-## 트러블슈팅 
+최근에는 “의미 있는 비즈니스 로직 검증”을 기준으로 테스트를 설계하며 커버리지 **93**%를 달성했습니다.  
+숫자 자체보다도 리팩토링·유지보수에 대비해 신뢰할 수 있는 실행 기반을 마련하는 것이 더 중요하다는 점을 깨달았고, 앞으로도 개발 시간 이상으로 테스트에 투자할 계획입니다.
+
+성능 측면에서는 다음 최적화를 적용 했습니다.
+
+1. **MockMvc 직렬화에 Gson 사용 + 공통 지원 클래스 도입**  
+   컨트롤러/통합 테스트가 매번 `ObjectMapper`를 띄우던 구조에서, `ControllerTestSupport`를 만들어 JWT 필터 목킹과 직렬화를 공통화하고 `Gson`을 정적 상수로 재사용하도록 바꿨습니다. Jackson 부팅과 필터 세팅 비용을 절약할 수 있었습니다.
+
+2. **Validator 인스턴스 전역 상수화**  
+   `ValidNicknameTest`, `ValidPasswordTest`, `ValidPostTitleTest` 등 Bean Validation을 사용하는 테스트는 모두 `static final Validator`를 공유하도록 변경했습니다. `Validation.buildDefaultValidatorFactory()` 호출을 매번 반복하지 않으므로 파라미터화된 테스트 실행 시간이 줄었습니다.
+
+| before               | after                |
+|----------------------|----------------------|
+| ![](/public/ori.png) | ![](/public/opt.png) |
+이와 같은 최적화를 통해 전체 테스트 시간이 평균 **4.308s → 3.469s**로 감소했으며, FIRST 원칙에 근접한 테스트 환경을 갖추는데 기여했습니다.

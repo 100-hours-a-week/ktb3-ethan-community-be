@@ -1,36 +1,24 @@
 package org.restapi.springrestapi.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.HttpServletRequest;
-import java.util.Optional;
-
-import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.restapi.springrestapi.controller.support.ControllerTestSupport;
 import org.restapi.springrestapi.dto.user.ChangePasswordRequest;
 import org.restapi.springrestapi.dto.user.PatchProfileRequest;
 import org.restapi.springrestapi.dto.user.UserProfileResult;
 import org.restapi.springrestapi.security.CustomUserDetails;
 import org.restapi.springrestapi.security.config.SecurityConfig;
-import org.restapi.springrestapi.security.jwt.JwtFilter;
-import org.restapi.springrestapi.security.jwt.JwtProvider;
 import org.restapi.springrestapi.service.UserService;
 import org.restapi.springrestapi.support.fixture.UserFixture;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.cors.CorsConfigurationSource;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -41,31 +29,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(UserController.class)
 @Import(SecurityConfig.class)
-class UserControllerTest {
-
-    @Autowired MockMvc mockMvc;
-    @Autowired ObjectMapper objectMapper;
+class UserControllerTest extends ControllerTestSupport {
 
     @MockitoBean UserService userService;
-    @MockitoBean JwtProvider jwtProvider;
-    @MockitoBean JwtFilter jwtFilter;
 
     CustomUserDetails principal;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         principal = new CustomUserDetails(UserFixture.persistedUser(1L));
-        given(jwtProvider.resolveAccessToken(any(HttpServletRequest.class))).willReturn(Optional.empty());
-        given(jwtProvider.resolveRefreshToken(any(HttpServletRequest.class))).willReturn(Optional.empty());
-
-        doAnswer(invocation -> {
-            HttpServletRequest req = invocation.getArgument(0);
-            HttpServletResponse res = invocation.getArgument(1);
-            FilterChain chain = invocation.getArgument(2);
-
-            chain.doFilter(req, res);
-            return null;
-        }).when(jwtFilter).doFilter(any(), any(), any());
     }
 
     @Test
@@ -94,7 +66,7 @@ class UserControllerTest {
         mockMvc.perform(patch("/users")
                 .with(SecurityMockMvcRequestPostProcessors.user(principal))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(GSON.toJson(request)))
             .andExpect(status().isOk());
 
         verify(userService).updateProfile(principal.getId(), request);
@@ -108,7 +80,7 @@ class UserControllerTest {
         mockMvc.perform(put("/users/password")
                 .with(SecurityMockMvcRequestPostProcessors.user(principal))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(GSON.toJson(request)))
             .andExpect(status().isNoContent());
 
         verify(userService).updatePassword(eq(principal.user()), eq(request));

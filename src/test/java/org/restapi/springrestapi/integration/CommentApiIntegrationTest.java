@@ -1,6 +1,6 @@
 package org.restapi.springrestapi.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CommentApiIntegrationTest {
 
     @Autowired MockMvc mockMvc;
-    @Autowired ObjectMapper objectMapper;
+    private static final Gson GSON = new Gson();
     @Autowired UserRepository userRepository;
     @Autowired PostRepository postRepository;
     @Autowired CommentRepository commentRepository;
@@ -53,7 +53,7 @@ class CommentApiIntegrationTest {
         mockMvc.perform(post("/posts/{postId}/comments", post.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, bearer(user.getId()))
-                .content(objectMapper.writeValueAsString(request)))
+                .content(GSON.toJson(request)))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.data.content").value(request.content()));
 
@@ -78,7 +78,7 @@ class CommentApiIntegrationTest {
 
         mockMvc.perform(post("/posts/{postId}/comments", post.getId())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(GSON.toJson(request)))
             .andExpect(status().isUnauthorized());
     }
 

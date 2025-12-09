@@ -3,8 +3,6 @@ package org.restapi.springrestapi.common;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
-import jakarta.validation.ValidatorFactory;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -17,18 +15,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ValidNicknameTest {
 
-    private Validator validator;
+    private static final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     record TestDto(
             @ValidNickname
             String nickname
     ) {}
-
-    @BeforeEach
-    void setUp() {
-        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        validator = factory.getValidator();
-    }
 
     @ParameterizedTest
     @ValueSource(strings = {"01", "0123456789"})

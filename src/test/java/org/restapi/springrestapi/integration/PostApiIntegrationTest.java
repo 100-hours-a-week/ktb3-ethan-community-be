@@ -1,6 +1,6 @@
 package org.restapi.springrestapi.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PostApiIntegrationTest {
 
     @Autowired MockMvc mockMvc;
-    @Autowired ObjectMapper objectMapper;
+    private static final Gson GSON = new Gson();
     @Autowired UserRepository userRepository;
     @Autowired PostRepository postRepository;
     @Autowired JwtProvider jwtProvider;
@@ -46,7 +46,7 @@ class PostApiIntegrationTest {
         mockMvc.perform(post("/posts")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, bearer(user.getId()))
-                .content(objectMapper.writeValueAsString(request)))
+                .content(GSON.toJson(request)))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.data.title").value(request.title()))
             .andExpect(jsonPath("$.data.content").value(request.content()));
@@ -70,7 +70,7 @@ class PostApiIntegrationTest {
         mockMvc.perform(post("/posts")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, token)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(GSON.toJson(request)))
             .andExpect(status().isUnauthorized())
             .andExpect(jsonPath("$.code").value(AuthErrorCode.UNAUTHORIZED.getCode()))
             .andExpect(jsonPath("$.message").value(AuthErrorCode.UNAUTHORIZED.getMessage()));
@@ -85,7 +85,7 @@ class PostApiIntegrationTest {
         mockMvc.perform(post("/posts")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, bearer(user.getId()))
-                .content(objectMapper.writeValueAsString(request)))
+                .content(GSON.toJson(request)))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.message").value("게시글 제목은 공백일 수 없습니다."));
     }
