@@ -23,7 +23,7 @@ public class AuthValidator {
             throw new AppException(AuthErrorCode.NOT_MATCH_NEW_PASSWORD);
         }
 
-		if (!passwordEncoder.matches(req.password(), oldEncodePassword)) {
+		if (passwordEncoder.matches(req.password(), oldEncodePassword)) {
 			throw new AppException(AuthErrorCode.PASSWORD_DUPLICATED);
 		}
     }

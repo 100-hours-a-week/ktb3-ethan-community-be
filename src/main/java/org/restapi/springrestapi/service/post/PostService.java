@@ -10,6 +10,7 @@ import org.restapi.springrestapi.dto.post.CreatePostRequest;
 import org.restapi.springrestapi.exception.AppException;
 import org.restapi.springrestapi.exception.code.PostErrorCode;
 import org.restapi.springrestapi.finder.PostFinder;
+import org.restapi.springrestapi.finder.UserFinder;
 import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.model.Post;
 import org.restapi.springrestapi.repository.PostRepository;
@@ -23,11 +24,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class PostService {
 	private final PostRepository postRepository;
-
 	private final PostFinder postFinder;
+    private final UserFinder userFinder;
     private final LocalPostViewDebounce localPostViewDebounce;
 
-	public PostResult createPost(User author, CreatePostRequest req) {
+	public PostResult createPost(Long authorId, CreatePostRequest req) {
+        User author = userFinder.findByIdOrAuthThrow(authorId);
 		return PostResult.from(postRepository.save(Post.from(req, author)), false);
 	}
 

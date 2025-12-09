@@ -53,7 +53,7 @@ public class PostController {
 	) {
 		return ResponseEntity.status(SuccessCode.REGISTER_SUCCESS.getStatus())
 			.body(APIResponse.ok(SuccessCode.REGISTER_SUCCESS,
-				postService.createPost(principal.user(), req)));
+				postService.createPost(principal.getId(), req)));
 	}
 
 

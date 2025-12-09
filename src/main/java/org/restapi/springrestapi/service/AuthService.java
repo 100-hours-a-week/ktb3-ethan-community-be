@@ -73,7 +73,8 @@ public class AuthService {
 
 
     public RefreshTokenResult refresh(HttpServletRequest request) {
-        String refreshToken = jwtProvider.resolveRefreshToken(request).get();
+        String refreshToken = jwtProvider.resolveRefreshToken(request)
+            .orElseThrow(() -> new AppException(AuthErrorCode.REFRESH_COOKIE_MISSING));
         Long userId = jwtProvider.getUserIdFromRefresh(refreshToken);
 
         userFinder.existsByIdOrThrow(userId);
