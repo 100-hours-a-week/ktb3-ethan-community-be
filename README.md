@@ -83,4 +83,7 @@
 2. **Validator 인스턴스 전역 상수화**  
    `ValidNicknameTest`, `ValidPasswordTest`, `ValidPostTitleTest` 등 Bean Validation을 사용하는 테스트는 모두 `static final Validator`를 공유하도록 변경했습니다. `Validation.buildDefaultValidatorFactory()` 호출을 매번 반복하지 않으므로 파라미터화된 테스트 실행 시간이 줄었습니다.
 
+| before               | after                |
+|----------------------|----------------------|
+| ![](/public/ori.png) | ![](/public/opt.png) |
 이와 같은 최적화를 통해 전체 테스트 시간이 평균 **4.308s → 3.469s**로 감소했으며, FIRST 원칙에 근접한 테스트 환경을 갖추는데 기여했습니다.
