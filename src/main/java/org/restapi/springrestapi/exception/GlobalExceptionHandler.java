@@ -56,33 +56,6 @@ public class GlobalExceptionHandler {
                 .body(APIResponse.error(CommonErrorCode.NOT_FOUND));
     }
 
-    // 405: 메서드 안 맞음
-    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<APIResponse<?>> handleMethodNotAllowed(HttpRequestMethodNotSupportedException e,
-                                                                 HttpServletRequest request) {
-        log.warn("[405] {} {} - {}", request.getMethod(), request.getRequestURI(), e.getMessage());
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-                .body(APIResponse.error(HttpStatus.METHOD_NOT_ALLOWED));
-    }
-
-    // 415: Content-Type 문제
-    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-    public ResponseEntity<APIResponse<?>> handleUnsupportedMedia(HttpMediaTypeNotSupportedException e,
-                                                                 HttpServletRequest request) {
-        log.warn("[415] {} {} - {}", request.getMethod(), request.getRequestURI(), e.getMessage());
-        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                .body(APIResponse.error(HttpStatus.UNSUPPORTED_MEDIA_TYPE));
-    }
-
-    // 409: 유니크 제약/무결성 위반 등 (DB 충돌)
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<APIResponse<?>> handleConflict(DataIntegrityViolationException e,
-                                                         HttpServletRequest request) {
-        log.warn("[409] {} {} - {}", request.getMethod(), request.getRequestURI(), e.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(APIResponse.error(HttpStatus.CONFLICT));
-    }
-
     @ExceptionHandler(AppException.class)
     public ResponseEntity<APIResponse<?>> handleAppException(AppException e, HttpServletRequest request) {
         ErrorCode code = e.getErrorCode();
