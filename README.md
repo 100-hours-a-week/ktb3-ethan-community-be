@@ -61,14 +61,20 @@
 
 ---
 
-### 인증/보안 개요
+## 인증/보안 개요
 - 세션리스(stateless) 구성: `SessionCreationPolicy.STATELESS`
-- CSRF: `/auth/refresh`에만 보호 적용 (Double Submit Cookie 방식)
-    - JWT + RTR(Refresh Token Rotation) 전략을 사용하므로, 엑세스 토큰 재발급 요청은 CSRF 공격에 취약할 수 있습니다.
-    - 서버는 `CookieCsrfTokenRepository`로 `XSRF-TOKEN` 쿠키를 발급하고, 클라이언트는 같은 값을 `X-XSRF-TOKEN` 헤더로 전송해 Double Submit을 통과해야 `/auth/refresh` 요청이 성공합니다.
 - JWT
-  - Access Token: Authorization 헤더(`Bearer <token>`)
-  - Refresh Token: HttpOnly + Secure 쿠키로 발급되며, RTR 전략으로 매번 갱신
+  - Access Token(AT): Authorization 헤더(`Bearer <token>`)
+  - Refresh Token(RT): HttpOnly + Secure 쿠키로 발급되며, RTR 전략으로 매번 갱신
+- CSRF: `/auth/refresh`에만 보호 적용 (Double Submit Cookie 방식)
+  - JWT + RTR(Refresh Token Rotation) 전략을 사용하므로, AT 재발급 요청은 CSRF 공격에 취약할 수 있습니다.
+  - - 공격자의 악의적 요청으로 사용자의 RT 만료에 의한 강제 로그아웃, 지속적인 리프레쉬 요청에 대한 서비스 정책으로 인한 계정 잠금 등의 피해가 발생할 수 있습니다.
+  - 서버는 `CookieCsrfTokenRepository`로 `XSRF-TOKEN` 쿠키를 발급하고, 클라이언트는 같은 값을 `X-XSRF-TOKEN` 헤더로 전송해 Double Submit을 통과해야 `/auth/refresh` 요청이 성공하도록 설계 해야합니다.
+
+
+![](/public/csrf-flow.png)
+
+---
 
 ## 테스트 철학 및 성능 노트
 
@@ -86,4 +92,5 @@
 | before               | after                |
 |----------------------|----------------------|
 | ![](/public/ori.png) | ![](/public/opt.png) |
-이와 같은 최적화를 통해 전체 테스트 시간이 평균 **4.308s → 3.469s**로 감소했으며, FIRST 원칙에 근접한 테스트 환경을 갖추는데 기여했습니다.
+
+최적화를 통해 전체 테스트 시간이 평균 **4.308s → 3.469s**로 감소했으며, FIRST 원칙에 근접한 테스트 환경을 갖추는데 기여했습니다.
