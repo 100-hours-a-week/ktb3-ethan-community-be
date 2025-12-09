@@ -21,6 +21,9 @@ public class APIResponse<T> {
 	public static <T> APIResponse<T> ok(SuccessCode code, T data) {
 		return new APIResponse<>(code.getMessage(), code.getCode(), data);
 	}
+    public static <T> APIResponse<T> ok(SuccessCode code) {
+        return ok(code, null);
+    }
 
     public static APIResponse<?> error(ErrorCode code) {
         return new APIResponse<>(code.getMessage(), code.getCode(), Map.of());

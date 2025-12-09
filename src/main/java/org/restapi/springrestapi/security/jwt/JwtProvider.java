@@ -14,6 +14,7 @@ import org.restapi.springrestapi.exception.code.AuthErrorCode;
 import org.restapi.springrestapi.finder.UserFinder;
 import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.security.CustomUserDetails;
+import org.restapi.springrestapi.exception.AuthException;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -130,9 +131,16 @@ public class JwtProvider {
 
     public Authentication getAuthentication(String accessToken) {
         Long userId = getUserIdFromAccess(accessToken);
-        User user = userFinder.findByIdOrAuthThrow(userId);
-        CustomUserDetails customUserDetails = new CustomUserDetails(user);
-        return new UsernamePasswordAuthenticationToken(customUserDetails, null, Collections.emptyList());
+        try {
+            User user = userFinder.findByIdOrAuthThrow(userId);
+            CustomUserDetails customUserDetails = new CustomUserDetails(user);
+            return new UsernamePasswordAuthenticationToken(customUserDetails, null, Collections.emptyList());
+        } catch (AppException ex) {
+            if (ex.getErrorCode() instanceof AuthErrorCode) {
+                throw new AuthException(ex.getErrorCode());
+            }
+            throw ex;
+        }
     }
 
     /*

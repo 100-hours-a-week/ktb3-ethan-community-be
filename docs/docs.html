@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>Quality Dashboard</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="dark light">
+  <style>
+    :root{
+      --bg-1:#0b1222; --bg-2:#0f172a; --bg-3:#1e293b;
+      --text:#e5e7eb; --muted:#b6c2d9;
+      --accent:#60a5fa; --accent-2:#93c5fd;
+      --glass:rgba(255,255,255,.10); --glass-2:rgba(255,255,255,.18);
+      --border:rgba(255,255,255,.22);
+      --shadow:0 10px 30px rgba(2,8,23,.45);
+      --radius:18px;
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg-1:#eef2ff; --bg-2:#f8fafc; --bg-3:#e2e8f0;
+        --text:#0f172a; --muted:#334155;
+        --glass:rgba(255,255,255,.65); --glass-2:rgba(255,255,255,.9);
+        --border:rgba(15,23,42,.10);
+        --shadow:0 10px 28px rgba(2,8,23,.10);
+      }
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; color:var(--text);
+      font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(1000px 700px at 10% 15%, var(--bg-1) 0%, var(--bg-2) 60%),
+        radial-gradient(900px 600px at 90% 90%, #0a1a30 0%, var(--bg-3) 55%);
+      min-height:100%;
+      display:flex; align-items:center; justify-content:center;
+      padding:28px;
+      position:relative; overflow:hidden;
+    }
+
+    /* Ambient shapes */
+    .blob{ position:absolute; filter:blur(60px); opacity:.45; pointer-events:none; }
+    .b1{ width:420px; height:420px; left:-120px; top:-120px; background:conic-gradient(from 120deg, #60a5fa, #34d399, #60a5fa); border-radius:50%; }
+    .b2{ width:520px; height:520px; right:-180px; bottom:-220px; background:conic-gradient(from -60deg, #a78bfa, #60a5fa, #f472b6); border-radius:50%; opacity:.30; }
+
+    .wrap{ width:min(1100px,100%); position:relative; z-index:1; }
+
+    .header{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      margin-bottom:18px;
+    }
+    .head-left{ display:flex; flex-direction:column; align-items:flex-start; gap:6px }
+    /* Simplify header: no glass container around the title */
+    .brand{ all:unset; }
+    .brand svg{ display:none !important; }
+    .title{ font-size:clamp(22px,3vw,32px); font-weight:800; margin:0 }
+    .subtitle{ margin:2px 0 0; color:var(--muted); font-size:13px }
+
+    .grid{ display:grid; grid-template-columns:repeat(12,1fr); gap:16px; }
+
+    .card{
+      display:block; text-decoration:none; color:inherit; cursor:pointer;
+      grid-column:span 6;
+      background: linear-gradient(180deg, var(--glass), var(--glass-2));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px) saturate(130%);
+      -webkit-backdrop-filter: blur(14px) saturate(130%);
+      padding:22px; position:relative; overflow:hidden;
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    }
+    .card::after{
+      content:""; position:absolute; inset:auto -20% -40% -20%; height:60%;
+      background: linear-gradient(180deg, transparent, rgba(255,255,255,.06));
+      pointer-events:none;
+    }
+    .card:hover{ transform: translateY(-6px); box-shadow: 0 16px 40px rgba(2,8,23,.55); border-color: rgba(255,255,255,.35) }
+    .card:focus-visible{ outline:3px solid #93c5fd; outline-offset:3px; border-color:#93c5fd }
+    @media (max-width:860px){ .card{ grid-column:span 12 } }
+
+    h3{ margin:0 0 8px 0; font-size:18px }
+    p{ margin:0 0 14px 0; color:var(--muted); font-size:14px }
+    .meta{ font-size:12px; color:var(--muted) }
+
+    .row{ display:flex; align-items:center; gap:12px }
+    .icon{ width:38px; height:38px; border-radius:12px; display:grid; place-items:center; flex:0 0 auto;
+      background:linear-gradient(135deg, rgba(96,165,250,.25), rgba(147,197,253,.15));
+      border:1px solid rgba(255,255,255,.22);
+    }
+    .icon svg{ width:20px; height:20px }
+
+    .btn{
+      display:inline-flex; align-items:center; gap:8px;
+      margin-top:12px; padding:10px 14px; border-radius:12px; font-weight:700; text-decoration:none;
+      color:#05121e; background:linear-gradient(135deg,var(--accent),var(--accent-2));
+      box-shadow:0 8px 20px rgba(2,8,23,.35); transition:transform .15s ease, box-shadow .15s ease;
+    }
+    .btn:hover{ transform:translateY(-2px); box-shadow:0 10px 26px rgba(2,8,23,.45) }
+    .btn:focus-visible{ outline:3px solid #93c5fd; outline-offset:2px }
+
+    .footer{ margin-top:18px; font-size:12px; color:var(--muted) }
+
+    /* API status pill */
+    .status-pill{ display:inline-flex; align-items:center; justify-content:center; padding:6px 10px; width:96px; height:28px; border-radius:999px; font-size:12px; font-weight:700; letter-spacing:.2px;
+      border:1px solid var(--border); background:linear-gradient(180deg, var(--glass), var(--glass-2));
+      box-shadow: var(--shadow); color:var(--muted); white-space:nowrap; flex:0 0 auto; cursor:pointer; }
+    .status-pill.online{ color:#052e16; background:linear-gradient(180deg, rgba(34,197,94,.85), rgba(16,185,129,.85)); border-color: rgba(16,185,129,.6) }
+    .status-pill.offline{ color:#3f0712; background:linear-gradient(180deg, rgba(248,113,113,.85), rgba(239,68,68,.85)); border-color: rgba(239,68,68,.6) }
+    .status-pill.unknown{ color:#0b1a2b; background:linear-gradient(180deg, rgba(148,163,184,.65), rgba(148,163,184,.45)); border-color: rgba(148,163,184,.5) }
+
+    @media (max-width:600px){
+      .header{ flex-direction:column; align-items:flex-start; gap:8px }
+    }
+  </style>
+</head>
+<body>
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+
+  <div class="wrap">
+    <div class="header">
+      <div class="head-left">
+        <h1 class="title">Project Quality Dashboard</h1>
+        <div class="subtitle">테스트, 커버리지 리포트, API 문서를 한 곳에서 빠르게 확인하세요.</div>
+      </div>
+      <span class="status-pill unknown" id="apiStatus" role="status" aria-live="polite" title="API 서버 상태: 확인 중 (클릭하여 다시 확인)" tabindex="0">확인 중...</span>
+    </div>
+
+    <div class="grid">
+      <a class="card" href="../build/reports/jacoco/test/html/index.html" target="_blank" rel="noopener" aria-label="JaCoCo 커버리지 리포트 열기">
+        <div class="row">
+          <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19h16"/>
+              <rect x="4" y="3" width="16" height="12" rx="2"/>
+              <path d="M8 21h8"/>
+            </svg>
+          </div>
+          <div>
+            <h3>JaCoCo 커버리지 리포트</h3>
+            <p>라인/브랜치 커버리지와 클래스별 상세를 제공합니다.</p>
+          </div>
+        </div>
+        <div class="meta">원본: <code>build/reports/jacoco/test/html/index.html</code></div>
+      </a>
+
+      <a class="card" href="../build/reports/tests/test/index.html" target="_blank" rel="noopener" aria-label="JUnit 테스트 리포트 열기">
+        <div class="row">
+          <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M8 12l2.5 2.5L16 9"/>
+            </svg>
+          </div>
+          <div>
+            <h3>JUnit 테스트 리포트</h3>
+            <p>성공/실패, 실행 시간, 표준 출력 로그를 요약합니다.</p>
+          </div>
+        </div>
+        <div class="meta">원본: <code>build/reports/tests/test/index.html</code></div>
+      </a>
+
+      <a class="card" href="http://localhost:8080/swagger-ui/index.html" target="_blank" rel="noopener" aria-label="Swagger API 문서 열기" id="swaggerCard">
+        <div class="row">
+          <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="2"/>
+              <path d="M7 8h10M7 12h6M7 16h8"/>
+            </svg>
+          </div>
+          <div>
+            <h3>Swagger API 문서</h3>
+            <p>엔드포인트, 스키마, 요청/응답 예시를 탐색합니다.</p>
+          </div>
+        </div>
+        <div class="meta">URL: <code>http://localhost:8080/swagger-ui/index.html</code></div>
+      </a>
+    </div>
+    <div class="footer">리포트는 <code>./gradlew test</code> 실행 후 생성됩니다.</div>
+  </div>
+
+  <script>
+    (function(){
+      const card = document.getElementById('swaggerCard');
+      const pill = document.getElementById('apiStatus');
+      if(!card || !pill) return;
+
+      // Allow override: docs.html?api=http://localhost:8080/swagger-ui/index.html
+      const params = new URLSearchParams(location.search);
+      const override = params.get('api');
+      const target = override || card.getAttribute('href');
+
+      function setState(state){
+        pill.classList.remove('online','offline','unknown');
+        pill.classList.add(state);
+        if(state === 'online'){
+          pill.textContent = '온라인';
+          pill.title = 'API 서버 상태: 온라인 (클릭하여 다시 확인)';
+          card.setAttribute('aria-label','Swagger API 문서 열기 (서버 온라인)');
+        }else if(state === 'offline'){
+          pill.textContent = '오프라인';
+          pill.title = 'API 서버 상태: 오프라인 (앱이 실행 중인지 확인하세요)';
+          card.setAttribute('aria-label','Swagger API 문서 열기 (서버 오프라인)');
+        }else{
+          pill.textContent = '확인 중...';
+          pill.title = 'API 서버 상태: 확인 중 (클릭하여 다시 확인)';
+          card.setAttribute('aria-label','Swagger API 문서 열기 (상태 확인 중)');
+        }
+      }
+
+      async function checkOnce(timeoutMs){
+        setState('unknown');
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+        try{
+          // Use no-cors so opaque responses still count as reachable
+          await fetch(target, { mode:'no-cors', cache:'no-store', signal: ctrl.signal });
+          clearTimeout(timer);
+          setState('online');
+        }catch(e){
+          clearTimeout(timer);
+          setState('offline');
+        }
+      }
+
+      // Click on pill triggers a re-check
+      pill.addEventListener('click', (e) => {
+        e.preventDefault();
+        checkOnce(2500);
+      });
+      // Keyboard support (Enter/Space)
+      pill.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter' || e.key === ' '){
+          e.preventDefault();
+          checkOnce(2500);
+        }
+      });
+
+      // Initial and periodic checks
+      checkOnce(2500);
+      setInterval(() => checkOnce(2500), 20000);
+    })();
+  </script>
+</body>
+</html>

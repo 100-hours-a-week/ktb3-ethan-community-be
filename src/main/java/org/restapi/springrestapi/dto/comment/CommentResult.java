@@ -13,16 +13,18 @@ public record CommentResult(
     String userNickname,
     String userProfileImageUrl,
     String content,
-	LocalDateTime createAt
+	LocalDateTime createAt,
+	LocalDateTime updateAt
 ) {
 	public static CommentResult from(Comment comment) {
 		return CommentResult.builder()
-			    .id(comment.getId())
-                .userId(comment.getUser().getId())
-                .userNickname(comment.getUser().getNickname())
-                .userProfileImageUrl(comment.getUser().getProfileImageUrl())
-                .content(comment.getContent())
-                .createAt(comment.getCreatedAt())
-                .build();
+			.id(comment.getId())
+			.userId(comment.getUser().getId())
+			.userNickname(comment.getUser().getNickname())
+			.userProfileImageUrl(comment.getUser().getProfileImageUrl())
+			.content(comment.getContent())
+			.createAt(comment.getCreatedAt())
+			.updateAt(comment.getUpdatedAt())
+			.build();
 	}
 }

@@ -7,10 +7,9 @@ import org.springframework.http.HttpStatus;
 @Getter
 @AllArgsConstructor
 public enum CommonErrorCode implements ErrorCode {
-	INVALID_REQUEST(HttpStatus.BAD_REQUEST, "COMMON000","invalid_request"),
-	NOT_FOUND(HttpStatus.NOT_FOUND, "COMMON001","not_found"),
-    BAD_REQUEST(HttpStatus.BAD_REQUEST, "COMMON002","bad_request: %s"),
-	INTERNAL(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON003","internal_server_error");
+	NOT_FOUND(HttpStatus.NOT_FOUND, "COMMON000","찾을 수 없는 자원"),
+    BAD_REQUEST(HttpStatus.BAD_REQUEST, "COMMON001","올바르지 않은 요청: %s"),
+	INTERNAL(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON002","API 서버 에러");
 
 	private final HttpStatus status;
     private final String code;

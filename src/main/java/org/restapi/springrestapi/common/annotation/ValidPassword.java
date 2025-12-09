@@ -14,14 +14,13 @@ import jakarta.validation.constraints.Size;
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = {})
-@NotBlank(message = "password_is_required")
-@Size(min = 8, max = 20, message = "invalid_password_length")
+@Size(min = 8, max = 20, message = "비밀번호는 8자 이상 20자 이하여야 합니다.")
 @Pattern(
-	regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()])[A-Za-z\\d!@#$%^&*()]{8,20}$",
-	message = "invalid_password_format"
+        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()])[A-Za-z\\d!@#$%^&*()]{8,20}$",
+        message = "비밀번호는 영문 대문자, 소문자, 숫자, 특수문자를 모두 포함해야 합니다."
 )
 public @interface ValidPassword {
-	String message() default "invalid_password";
-	Class<?>[] groups() default {};
-	Class<? extends Payload>[] payload() default {};
+    String message() default "유효하지 않은 비밀번호 형식입니다.";
+    Class<?>[] groups() default {};
+    Class<? extends Payload>[] payload() default {};
 }

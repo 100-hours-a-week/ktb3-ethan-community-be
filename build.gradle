@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.6'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
 }
 
 group = 'org.restapi'
@@ -30,7 +31,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+    testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
@@ -43,8 +44,32 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     runtimeOnly 'com.mysql:mysql-connector-j'
+
+    testRuntimeOnly 'com.h2database:h2'
+}
+
+jacoco {
+    toolVersion = '0.8.11'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+    finalizedBy tasks.jacocoTestReport
+}
+
+tasks.named('jacocoTestReport', JacocoReport).configure {
+    dependsOn 'test'
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+    // 커버리지 대상에서 main Application 클래스 제외
+    classDirectories.setFrom(
+            files(classDirectories.files.collect { dir ->
+                fileTree(dir: dir, exclude: [
+                        '**/*Application.class'
+                ])
+            })
+    )
 }

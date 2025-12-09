@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:ktb3;MODE=MYSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
+jwt:
+  access:
+    ttl: 30m
+    secret: "test_access_token_secret_value_which_is_long_enough_123"
+  refresh:
+    ttl: 7d
+    secret: "test_refresh_token_secret_value_which_is_also_long_456"
+
+app:
+  upload:
+    base-dir: "./upload"
+    public-base-url: "http://localhost:8080/upload"

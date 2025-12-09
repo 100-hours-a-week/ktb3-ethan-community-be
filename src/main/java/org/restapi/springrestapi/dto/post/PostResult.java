@@ -4,29 +4,30 @@ import java.time.LocalDateTime;
 import org.restapi.springrestapi.model.Post;
 
 import lombok.Builder;
-import lombok.Getter;
 
-@Getter
 @Builder
-public class PostResult {
-	private Long id;
-    private Long userId;
-    private String userNickName;
-    private String userProfileImageUrl;
-	private String title;
-	private String content;
-    private String thumbnailImageUrl;
-	private boolean didLike;
-	private int likeCount;
-	private int commentCount;
-	private int viewCount;
-	private LocalDateTime createdAt;
+public record PostResult (
+	Long id,
+    Long userId,
+    String userNickname,
+    String userProfileImageUrl,
 
+	String title,
+	String content,
+    String thumbnailImageUrl,
+	boolean didLike,
+
+	int likeCount,
+	int commentCount,
+	int viewCount,
+
+	LocalDateTime createdAt
+) {
 	public static PostResult from(Post post, boolean didLike) {
 		return PostResult.builder()
 			.id(post.getId())
             .userId(post.getAuthor().getId())
-            .userNickName(post.getAuthor().getNickname())
+            .userNickname(post.getAuthor().getNickname())
             .userProfileImageUrl(post.getAuthor().getProfileImageUrl())
 			.title(post.getTitle())
 			.content(post.getContent())
@@ -38,7 +39,4 @@ public class PostResult {
             .didLike(didLike)
 			.build();
 	}
-    public static PostResult from(Post post) {
-        return PostResult.from(post, false);
-    }
 }

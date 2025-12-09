@@ -1,7 +1,7 @@
 package org.restapi.springrestapi.service.post;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.restapi.springrestapi.service.auth.UserKeyGenerator;
+
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;

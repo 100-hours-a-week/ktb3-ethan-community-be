@@ -1,13 +1,32 @@
 package org.restapi.springrestapi.validator;
 
+import org.restapi.springrestapi.exception.AppException;
+import org.restapi.springrestapi.exception.code.UserErrorCode;
+import org.restapi.springrestapi.finder.UserFinder;
+import org.springframework.stereotype.Component;
+
+import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
-@Transactional
-public interface UserValidator {
-    void validateUserExists(Long id);
-    void validateDuplicateEmail(String email);
-    void validateDuplicateNickname(String nickname);
-    default void validateSignUpUser(String email, String nickname) {
+@Component
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class UserValidator {
+    private final UserFinder userFinder;
+
+    public void validateDuplicateEmail(String email) {
+        if (userFinder.existsByEmail(email)) {
+            throw new AppException(UserErrorCode.EMAIL_DUPLICATED);
+        }
+    }
+
+    public void validateDuplicateNickname(String nickname) {
+        if (userFinder.existsByNickName(nickname)) {
+            throw new AppException(UserErrorCode.NICKNAME_DUPLICATED);
+        }
+    }
+
+    public void validateSignUpUser(String email, String nickname) {
         validateDuplicateEmail(email);
         validateDuplicateNickname(nickname);
     }

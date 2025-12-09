@@ -7,12 +7,12 @@ import jakarta.validation.constraints.NotBlank;
 
 public record ChangePasswordRequest (
 	@ValidPassword
-	@Schema(description = "새로운 비밀번호", example = "testTT1!!")
+    @NotBlank(message = "새로운 비밀번호 입력 누락")
+	@Schema(description = "새로운 비밀번호", example = "Password2@")
 	String password,
 
+    @ValidPassword
 	@NotBlank(message = "새로운 비밀번호 확인 입력 누락")
-	@Schema(description = "새로운 비밀번호 확인", example = "testTT1!!")
+	@Schema(description = "새로운 비밀번호 확인", example = "PassWord2@")
     String confirmPassword
-){
-
-}
+){ }

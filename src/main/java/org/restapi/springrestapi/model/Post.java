@@ -5,10 +5,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.restapi.springrestapi.common.annotation.ValidPostTitle;
 import org.restapi.springrestapi.dto.post.PatchPostRequest;
-import org.restapi.springrestapi.dto.post.RegisterPostRequest;
+import org.restapi.springrestapi.dto.post.CreatePostRequest;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -23,59 +25,66 @@ public class Post {
 	private Long id;
 
     @Column(nullable = false)
+    @ValidPostTitle
 	private String title;
 
     @Column(nullable = false)
+    @NotBlank
     private String content;
 
     private String thumbnailImageUrl;
 
-    @Column(nullable = false)
-    LocalDateTime createdAt;
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     @Column(nullable = false)
-    LocalDateTime updatedAt;
+    private LocalDateTime updatedAt;
 
     // 집계 컬럼
 	private int likeCount;
     private int viewCount;
 	private int commentCount;
 
-
-    @ManyToOne
-    @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false, updatable = false)
     private User author;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PostLike> likes = new ArrayList<>();
-
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<Comment> comments = new ArrayList<>();
 
 
-    /*
-    constructor=
-    - from(RegisterPostRequest)
-    - from(PatchPostRequest, Post)
-     */
-    public static Post from(RegisterPostRequest command) {
-		return Post.builder()
-                .title(command.title())
-                .content(command.content())
-                .thumbnailImageUrl(command.thumbnailImageUrl())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+    @PrePersist
+    private void prePersist() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public static Post from(CreatePostRequest req, User author) {
+		Post post =  Post.builder()
+                .title(req.title())
+                .content(req.content())
+                .thumbnailImageUrl(req.thumbnailImageUrl())
                 .build();
+
+		post.changeAuthor(author);
+		return post;
 	}
 
-	public static Post from(PatchPostRequest command, Post prevPost) {
-		return prevPost.toBuilder()
-                .title(command.title())
-                .content(command.content())
-                .thumbnailImageUrl(command.thumbnailImageUrl())
-                .updatedAt(LocalDateTime.now())
-                .build();
-	}
+    public void update(PatchPostRequest req) {
+        if (req.title() != null) {
+            this.title = req.title();
+        }
+        if (req.content() != null) {
+            this.content = req.content();
+        }
+        if (req.removeThumbnailImage()) {
+            this.thumbnailImageUrl = null;
+        } else if (req.thumbnailImageUrl() != null) {
+            this.thumbnailImageUrl = req.thumbnailImageUrl();
+        }
+        this.updatedAt = LocalDateTime.now();
+    }
 
     public void changeAuthor(User newAuthor) {
         if (this.author != null) {

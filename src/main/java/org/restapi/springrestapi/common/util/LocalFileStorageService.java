@@ -86,11 +86,11 @@ public class LocalFileStorageService implements FileStorageService {
 
     private String validateAndGetExtension(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new AppException(CommonErrorCode.INVALID_REQUEST);
+            throw new AppException(CommonErrorCode.BAD_REQUEST);
         }
 
         String originalName = Optional.ofNullable(file.getOriginalFilename())
-                .orElseThrow(() -> new AppException(CommonErrorCode.INVALID_REQUEST));
+                .orElseThrow(() -> new AppException(CommonErrorCode.BAD_REQUEST));
 
         String ext = getFileExtension(originalName);
 

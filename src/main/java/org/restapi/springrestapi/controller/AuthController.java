@@ -10,7 +10,7 @@ import org.restapi.springrestapi.common.APIResponse;
 import org.restapi.springrestapi.dto.auth.*;
 import org.restapi.springrestapi.exception.code.SuccessCode;
 import org.restapi.springrestapi.security.jwt.JwtProvider;
-import org.restapi.springrestapi.service.auth.AuthService;
+import org.restapi.springrestapi.service.AuthService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
