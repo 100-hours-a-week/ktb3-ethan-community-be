@@ -3,8 +3,6 @@ package org.restapi.springrestapi.common;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
-import jakarta.validation.ValidatorFactory;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -17,25 +15,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ValidPasswordTest {
 
-    private Validator validator;
+    private static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
 
     record TestDto(
             @ValidPassword
             String password
     ) {}
 
-    @BeforeEach
-    void setUp() {
-        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        validator = factory.getValidator();
-    }
-
     @Test
     @DisplayName("대문자/소문자/숫자/특수문자를 모두 포함한 8~20자 비밀번호는 통과한다")
     void validPassword_passes() {
         TestDto dto = new TestDto("GoodPass1!");
 
-        Set<ConstraintViolation<TestDto>> violations = validator.validate(dto);
+        Set<ConstraintViolation<TestDto>> violations = VALIDATOR.validate(dto);
 
         assertThat(violations).isEmpty();
     }
@@ -46,7 +38,7 @@ class ValidPasswordTest {
     void passwordLength_fails(String invalidPassword) {
         TestDto dto = new TestDto(invalidPassword);
 
-        Set<ConstraintViolation<TestDto>> violations = validator.validate(dto);
+        Set<ConstraintViolation<TestDto>> violations = VALIDATOR.validate(dto);
 
         assertThat(violations).isNotEmpty();
         assertThat(violations).extracting("message")
@@ -66,7 +58,7 @@ class ValidPasswordTest {
     void passwordPattern_fails(String invalidPassword) {
         TestDto dto = new TestDto(invalidPassword);
 
-        Set<ConstraintViolation<TestDto>> violations = validator.validate(dto);
+        Set<ConstraintViolation<TestDto>> violations = VALIDATOR.validate(dto);
 
         assertThat(violations).isNotEmpty();
         assertThat(violations).extracting("message")

@@ -1,22 +1,23 @@
 package org.restapi.springrestapi.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.restapi.springrestapi.dto.auth.LoginRequest;
 import org.restapi.springrestapi.dto.auth.LoginResult;
 import org.restapi.springrestapi.dto.auth.RefreshTokenResult;
 import org.restapi.springrestapi.dto.auth.SignUpRequest;
-import org.restapi.springrestapi.security.jwt.JwtFilter;
-import org.restapi.springrestapi.security.jwt.JwtProvider;
+import org.restapi.springrestapi.exception.GlobalExceptionHandler;
 import org.restapi.springrestapi.service.AuthService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -26,16 +27,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(AuthController.class)
-@AutoConfigureMockMvc(addFilters = false)
+@ExtendWith(MockitoExtension.class)
 class AuthControllerTest {
 
-    @Autowired MockMvc mockMvc;
-    @Autowired ObjectMapper objectMapper;
+    @InjectMocks AuthController authController;
+    @Mock AuthService authService;
 
-    @MockitoBean AuthService authService;
-	@MockitoBean JwtProvider jwtProvider;
-	@MockitoBean JwtFilter jwtFilter;
+    private static final Gson GSON = new Gson();
+
+    MockMvc mockMvc;
+
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(authController)
+            .setControllerAdvice(new GlobalExceptionHandler())
+            .build();
+    }
 
     @Test
     @DisplayName("로그인 성공 시 토큰 응답과 쿠키를 설정한다")
@@ -52,7 +59,7 @@ class AuthControllerTest {
 
         mockMvc.perform(post("/auth/login")
                 .contentType("application/json")
-                .content(objectMapper.writeValueAsString(request)))
+                .content(GSON.toJson(request)))
             .andExpect(status().isOk())
             .andExpect(header().string(HttpHeaders.SET_COOKIE, result.refreshCookie().toString()))
             .andExpect(jsonPath("$.data.accessToken").value("access"));
@@ -75,7 +82,7 @@ class AuthControllerTest {
 
         mockMvc.perform(post("/auth/signup")
                 .contentType("application/json")
-                .content(objectMapper.writeValueAsString(request)))
+                .content(GSON.toJson(request)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.email").value(request.email()));
 

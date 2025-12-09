@@ -1,34 +1,24 @@
 package org.restapi.springrestapi.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.restapi.springrestapi.controller.support.ControllerTestSupport;
 import org.restapi.springrestapi.dto.comment.CommentListResult;
 import org.restapi.springrestapi.dto.comment.CommentResult;
 import org.restapi.springrestapi.dto.comment.CreateCommentRequest;
 import org.restapi.springrestapi.dto.comment.PatchCommentRequest;
 import org.restapi.springrestapi.security.CustomUserDetails;
 import org.restapi.springrestapi.security.config.SecurityConfig;
-import org.restapi.springrestapi.security.jwt.JwtFilter;
-import org.restapi.springrestapi.security.jwt.JwtProvider;
 import org.restapi.springrestapi.service.CommentService;
 import org.restapi.springrestapi.support.fixture.UserFixture;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -40,33 +30,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(CommentController.class)
 @Import(SecurityConfig.class)
-class CommentControllerTest {
-
-    @Autowired MockMvc mockMvc;
-    @Autowired ObjectMapper objectMapper;
+class CommentControllerTest extends ControllerTestSupport {
 
     @MockitoBean CommentService commentService;
-    @MockitoBean JwtProvider jwtProvider;
-    @MockitoBean JwtFilter jwtFilter;
 
 
     CustomUserDetails principal;
     final long POST_ID = 1L, COMMENT_ID = 1L;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         principal = new CustomUserDetails(UserFixture.persistedUser().toBuilder().id(1L).build());
-        given(jwtProvider.resolveAccessToken(any(HttpServletRequest.class))).willReturn(Optional.empty());
-        given(jwtProvider.resolveRefreshToken(any(HttpServletRequest.class))).willReturn(Optional.empty());
-
-        doAnswer(invocation -> {
-            HttpServletRequest req = invocation.getArgument(0);
-            HttpServletResponse res = invocation.getArgument(1);
-            FilterChain chain = invocation.getArgument(2);
-
-            chain.doFilter(req, res);
-            return null;
-        }).when(jwtFilter).doFilter(any(), any(), any());
     }
 
     @Test
@@ -85,7 +59,7 @@ class CommentControllerTest {
         mockMvc.perform(post("/posts/{postId}/comments", POST_ID)
                         .with(SecurityMockMvcRequestPostProcessors.user(principal))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(GSON.toJson(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.content").value(request.content()));
 
@@ -103,7 +77,7 @@ class CommentControllerTest {
         mockMvc.perform(post("/posts/{postId}/comments", POST_ID)
                         .with(SecurityMockMvcRequestPostProcessors.user(principal))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalid)))
+                        .content(GSON.toJson(invalid)))
                 .andExpect(status().isBadRequest());
 
         // then
@@ -141,7 +115,7 @@ class CommentControllerTest {
         mockMvc.perform(patch("/posts/{postId}/comments/{id}", POST_ID, COMMENT_ID)
                         .with(SecurityMockMvcRequestPostProcessors.user(principal))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(GSON.toJson(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content").value("updated"));
 
