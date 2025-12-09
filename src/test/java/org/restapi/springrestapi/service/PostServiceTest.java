@@ -15,11 +15,14 @@ import org.restapi.springrestapi.dto.post.PostResult;
 import org.restapi.springrestapi.exception.AppException;
 import org.restapi.springrestapi.exception.code.PostErrorCode;
 import org.restapi.springrestapi.finder.PostFinder;
+import org.restapi.springrestapi.finder.UserFinder;
 import org.restapi.springrestapi.model.Post;
 import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.repository.PostRepository;
 import org.restapi.springrestapi.service.post.LocalPostViewDebounce;
 import org.restapi.springrestapi.service.post.PostService;
+import org.restapi.springrestapi.support.fixture.PostFixture;
+import org.restapi.springrestapi.support.fixture.UserFixture;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
@@ -45,16 +48,18 @@ public class PostServiceTest {
     @Mock PostRepository postRepository;
     @Mock PostFinder postFinder;
     @Mock LocalPostViewDebounce localPostViewDebounce;
+    @Mock UserFinder userFinder;
 
     @Test
     @DisplayName("게시글 작성 시 작성자 정보와 요청 본문으로 jwt저장 후 DTO를 반환한다")
     void createPost_persistsEntityAndReturnsResult() {
-        User author = sampleUser(7L);
+        User author = UserFixture.persistedUser(7L);
         CreatePostRequest request = new CreatePostRequest("제목", "본문", "thumb.jpg");
-        Post savedPost = samplePost(31L, author);
+        Post savedPost = PostFixture.persistedPost(31L, author);
+        given(userFinder.findByIdOrAuthThrow(author.getId())).willReturn(author);
         given(postRepository.save(any(Post.class))).willReturn(savedPost);
 
-        PostResult result = postService.createPost(author, request);
+        PostResult result = postService.createPost(author.getId(), request);
 
         ArgumentCaptor<Post> captor = ArgumentCaptor.forClass(Post.class);
         verify(postRepository).save(captor.capture());
@@ -97,7 +102,7 @@ public class PostServiceTest {
         HttpServletRequest request = mock(HttpServletRequest.class);
         Long postId = 10L;
         Long userId = 3L;
-        Post post = samplePost(postId, sampleUser(userId));
+        Post post = PostFixture.persistedPost(postId, UserFixture.persistedUser(userId));
         given(postFinder.findByIdOrThrow(postId)).willReturn(post);
         given(postFinder.isDidLikeUser(postId, userId)).willReturn(true);
         given(localPostViewDebounce.seenRecently(request, userId, postId)).willReturn(false);
@@ -117,7 +122,7 @@ public class PostServiceTest {
     void getPost_doesNotIncrementViewCountWhenSeenRecently() {
         HttpServletRequest request = mock(HttpServletRequest.class);
         Long postId = 4L;
-        Post post = samplePost(postId, sampleUser(10L));
+        Post post = PostFixture.persistedPost(postId, UserFixture.persistedUser(10L));
         given(postFinder.findByIdOrThrow(postId)).willReturn(post);
         given(postFinder.isDidLikeUser(postId, null)).willReturn(false);
         given(localPostViewDebounce.seenRecently(request, null, postId)).willReturn(true);
@@ -134,7 +139,7 @@ public class PostServiceTest {
         Long authorId = 5L;
         Long postId = 22L;
         PatchPostRequest request = new PatchPostRequest("새 제목", "새 본문", "", true);
-        Post post = samplePost(postId, sampleUser(authorId));
+        Post post = PostFixture.persistedPost(postId, UserFixture.persistedUser(authorId));
         given(postFinder.findByIdOrThrow(postId)).willReturn(post);
 
         postService.updatePost(authorId, postId, request);
@@ -149,7 +154,7 @@ public class PostServiceTest {
     void updatePost_throwsWhenUserIsNotAuthor() {
         Long postId = 22L;
         PatchPostRequest request = new PatchPostRequest("새 제목", null, null, false);
-        Post post = samplePost(postId, sampleUser(999L));
+        Post post = PostFixture.persistedPost(postId, UserFixture.persistedUser(999L));
         given(postFinder.findByIdOrThrow(postId)).willReturn(post);
 
         assertThatThrownBy(() -> postService.updatePost(1L, postId, request))
@@ -162,7 +167,7 @@ public class PostServiceTest {
     void deletePost_deletesWhenAuthorMatches() {
         Long postId = 8L;
         Long authorId = 2L;
-        Post post = samplePost(postId, sampleUser(authorId));
+        Post post = PostFixture.persistedPost(postId, UserFixture.persistedUser(authorId));
         given(postFinder.findByIdOrThrow(postId)).willReturn(post);
 
         postService.deletePost(authorId, postId);
@@ -174,39 +179,13 @@ public class PostServiceTest {
     @DisplayName("작성자가 아니면 게시글 삭제 시 예외가 발생한다")
     void deletePost_throwsWhenUserIsNotAuthor() {
         Long postId = 8L;
-        Post post = samplePost(postId, sampleUser(10L));
+        Post post = PostFixture.persistedPost(postId, UserFixture.persistedUser(10L));
         given(postFinder.findByIdOrThrow(postId)).willReturn(post);
 
         assertThatThrownBy(() -> postService.deletePost(3L, postId))
             .isInstanceOf(AppException.class)
             .satisfies(ex -> assertThat(((AppException) ex).getErrorCode()).isEqualTo(PostErrorCode.NOT_POST_OWNER));
         verify(postRepository, never()).deleteById(anyLong());
-    }
-
-    private User sampleUser(Long id) {
-        return User.builder()
-            .id(id)
-            .nickname("user" + id)
-            .email("user" + id + "@test.com")
-            .password("password")
-            .profileImageUrl("https://img/" + id)
-            .joinAt(LocalDateTime.now().minusDays(1))
-            .build();
-    }
-
-    private Post samplePost(Long id, User author) {
-        return Post.builder()
-            .id(id)
-            .title("title" + id)
-            .content("content")
-            .thumbnailImageUrl("thumb" + id)
-            .createdAt(LocalDateTime.now().minusDays(2))
-            .updatedAt(LocalDateTime.now().minusDays(1))
-            .likeCount(0)
-            .commentCount(0)
-            .viewCount(0)
-            .author(author)
-            .build();
     }
 
     private PostResult samplePostResult(Long id, String title) {

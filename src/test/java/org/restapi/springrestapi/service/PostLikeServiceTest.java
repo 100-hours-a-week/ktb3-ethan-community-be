@@ -15,9 +15,10 @@ import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.repository.PostLikeRepository;
 import org.restapi.springrestapi.repository.PostRepository;
 import org.restapi.springrestapi.service.post.PostLikeService;
+import org.restapi.springrestapi.support.fixture.PostFixture;
+import org.restapi.springrestapi.support.fixture.UserFixture;
 import org.restapi.springrestapi.validator.UserValidator;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,8 +45,8 @@ class PostLikeServiceTest {
         // given
         Long userId = 1L;
         Long postId = 2L;
-        Post post = samplePost(postId);
-        PostLike like = new PostLike(sampleUser(userId), post);
+        Post post = PostFixture.persistedPost(postId, UserFixture.persistedUser(100L));
+        PostLike like = new PostLike(UserFixture.persistedUser(userId), post);
         given(postLikeRepository.existsByUserIdAndPostId(userId, postId)).willReturn(true);
         given(postLikeRepository.findByUserIdAndPostId(userId, postId)).willReturn(like);
         given(postRepository.findLikeCountById(postId)).willReturn(Optional.of(3));
@@ -68,8 +69,8 @@ class PostLikeServiceTest {
         // given
         Long userId = 4L;
         Long postId = 5L;
-        User user = sampleUser(userId);
-        Post post = samplePost(postId);
+        User user = UserFixture.persistedUser(userId);
+        Post post = PostFixture.persistedPost(postId, UserFixture.persistedUser(100L));
         given(postLikeRepository.existsByUserIdAndPostId(userId, postId)).willReturn(false);
         given(userFinder.findProxyById(userId)).willReturn(user);
         given(postFinder.findProxyById(postId)).willReturn(post);
@@ -87,26 +88,4 @@ class PostLikeServiceTest {
         assertThat(result.likeCount()).isEqualTo(11);
     }
 
-    private User sampleUser(Long id) {
-        return User.builder()
-                .id(id)
-                .nickname("user" + id)
-                .email("user" + id + "@test.com")
-                .password("pw")
-                .profileImageUrl("https://img/" + id)
-                .joinAt(LocalDateTime.now())
-                .build();
-    }
-
-    private Post samplePost(Long id) {
-        return Post.builder()
-                .id(id)
-                .title("title " + id)
-                .content("content")
-                .thumbnailImageUrl("thumb")
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .author(sampleUser(100L))
-                .build();
-    }
 }

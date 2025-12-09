@@ -22,4 +22,14 @@ public final class PostFixture {
         }
         return post;
     }
+
+    public static Post persistedPost(Long id, User author) {
+        Post post = persistedPost(author).toBuilder()
+            .id(id)
+            .build();
+        if (author != null) {
+            post.changeAuthor(author);
+        }
+        return post;
+    }
 }

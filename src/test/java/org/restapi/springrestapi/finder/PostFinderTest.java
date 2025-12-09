@@ -41,7 +41,7 @@ class PostFinderTest {
     PostLikeRepository postLikeRepository;
 
     @Test
-    @DisplayName("findPostSummarySlice clamps lower bound without cursor")
+    @DisplayName("커서가 없으면 페이지 크기를 하한으로 보정한다")
     void findPostSummarySlice_withoutCursorClampsLowerBound() {
         Slice<PostResult> slice = new SliceImpl<>(List.of(), PageRequest.of(0, 1), false);
         given(postRepository.findSlice(any(PageRequest.class))).willReturn(slice);
@@ -55,7 +55,7 @@ class PostFinderTest {
     }
 
     @Test
-    @DisplayName("findPostSummarySlice clamps upper bound when cursor exists")
+    @DisplayName("커서가 있으면 페이지 크기를 상한으로 보정한다")
     void findPostSummarySlice_withCursorClampsUpperBound() {
         Slice<PostResult> slice = new SliceImpl<>(List.of(), PageRequest.of(0, 10), false);
         given(postRepository.findSlice(eq(100L), any(PageRequest.class))).willReturn(slice);
@@ -69,7 +69,7 @@ class PostFinderTest {
     }
 
     @Test
-    @DisplayName("isDidLikeUser short-circuits when userId is null")
+    @DisplayName("userId가 null이면 좋아요 조회를 생략한다")
     void isDidLikeUser_returnsFalseWhenUserIsNull() {
         boolean result = postFinder.isDidLikeUser(5L, null);
 
@@ -78,7 +78,7 @@ class PostFinderTest {
     }
 
     @Test
-    @DisplayName("findByIdOrThrow emits POST_NOT_FOUND when missing")
+    @DisplayName("게시글이 없으면 POST_NOT_FOUND 예외를 던진다")
     void findByIdOrThrow_throwsWhenPostMissing() {
         given(postRepository.findById(7L)).willReturn(Optional.empty());
 
@@ -88,7 +88,7 @@ class PostFinderTest {
     }
 
     @Test
-    @DisplayName("isDidLikeUser mirrors repository response")
+    @DisplayName("좋아요 여부는 Repository 결과를 그대로 따른다")
     void isDidLikeUser_returnsRepositoryResult() {
         given(postLikeRepository.existsByUserIdAndPostId(3L, 8L)).willReturn(true);
 
@@ -99,7 +99,7 @@ class PostFinderTest {
     }
 
     @Test
-    @DisplayName("findProxyById delegates to repository")
+    @DisplayName("findProxyById는 Repository 호출을 위임한다")
     void findProxyById_delegatesToRepository() {
         Post proxy = Post.builder().id(55L).build();
         given(postRepository.getReferenceById(55L)).willReturn(proxy);
