@@ -25,7 +25,7 @@ class LocalFileStorageServiceTest {
     Path baseDir;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setUp() {
         service = new LocalFileStorageService();
         ReflectionTestUtils.setField(service, "baseDir", baseDir.toString());
         ReflectionTestUtils.setField(service, "publicBaseUrl", "http://localhost/files");
@@ -75,6 +75,6 @@ class LocalFileStorageServiceTest {
         assertThatThrownBy(() -> service.saveProfileImage(file))
                 .isInstanceOf(AppException.class)
                 .extracting("errorCode")
-                .isEqualTo(CommonErrorCode.INVALID_REQUEST);
+                .isEqualTo(CommonErrorCode.BAD_REQUEST);
     }
 }

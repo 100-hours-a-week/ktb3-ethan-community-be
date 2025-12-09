@@ -28,4 +28,19 @@ class LocalPostViewDebounceTest {
         assertThat(first).isFalse();
         assertThat(second).isTrue();
     }
+
+    @Test
+    @DisplayName("식별 정보가 없어도 같은 요청이면 두 번째 호출에서 true를 반환한다")
+    void seenRecently_withoutIdentifier_behavesConsistently() {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        given(request.getHeader("X-Forwarded-For")).willReturn(null);
+        given(request.getHeader("User-Agent")).willReturn(null);
+        given(request.getRemoteAddr()).willReturn(null);
+
+        boolean first = debounce.seenRecently(request, null, 1L);
+        boolean second = debounce.seenRecently(request, null, 1L);
+
+        assertThat(first).isFalse();
+        assertThat(second).isTrue();
+    }
 }
