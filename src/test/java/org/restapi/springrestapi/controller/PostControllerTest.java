@@ -1,6 +1,8 @@
 package org.restapi.springrestapi.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -8,13 +10,14 @@ import org.restapi.springrestapi.dto.post.CreatePostRequest;
 import org.restapi.springrestapi.dto.post.PatchPostRequest;
 import org.restapi.springrestapi.dto.post.PostListResult;
 import org.restapi.springrestapi.dto.post.PostResult;
-import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.exception.code.SuccessCode;
 import org.restapi.springrestapi.security.CustomUserDetails;
 import org.restapi.springrestapi.security.config.SecurityConfig;
+import org.restapi.springrestapi.security.jwt.JwtFilter;
 import org.restapi.springrestapi.security.jwt.JwtProvider;
 import org.restapi.springrestapi.service.post.PostLikeService;
 import org.restapi.springrestapi.service.post.PostService;
+import org.restapi.springrestapi.support.fixture.UserFixture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -31,7 +34,9 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -50,16 +55,25 @@ class PostControllerTest {
     @MockitoBean PostService postService;
     @MockitoBean PostLikeService postLikeService;
     @MockitoBean JwtProvider jwtProvider;
-    @MockitoBean CorsConfigurationSource corsConfigurationSource;
+    @MockitoBean JwtFilter jwtFilter;
 
     CustomUserDetails principal;
 
     @BeforeEach
-    void setUp() {
-        principal = new CustomUserDetails(sampleUser(1L));
+    void setUp() throws Exception {
+        principal = new CustomUserDetails(UserFixture.persistedUser(1L));
 
         given(jwtProvider.resolveAccessToken(any(HttpServletRequest.class))).willReturn(Optional.empty());
         given(jwtProvider.resolveRefreshToken(any(HttpServletRequest.class))).willReturn(Optional.empty());
+
+        doAnswer(invocation -> {
+            HttpServletRequest req = invocation.getArgument(0);
+            HttpServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+
+            chain.doFilter(req, res);
+            return null;
+        }).when(jwtFilter).doFilter(any(), any(), any());
     }
 
     @Test
@@ -67,7 +81,7 @@ class PostControllerTest {
     void createPost_returnsCreated() throws Exception {
         CreatePostRequest request = new CreatePostRequest("제목", "내용", "thumb");
         PostResult response = samplePostResult(10L, "제목");
-        given(postService.createPost(principal.user(), request)).willReturn(response);
+        given(postService.createPost(principal.getId(), request)).willReturn(response);
 
         mockMvc.perform(post("/posts")
                 .with(SecurityMockMvcRequestPostProcessors.user(principal))
@@ -76,7 +90,7 @@ class PostControllerTest {
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.data.id").value(10));
 
-        verify(postService).createPost(principal.user(), request);
+        verify(postService).createPost(principal.getId(), request);
     }
 
     @Test
@@ -113,6 +127,20 @@ class PostControllerTest {
 
         verify(postService).getPost(any(), eq(principal.getId()), eq(7L));
     }
+
+    @Test
+    @DisplayName("게시글 상세 조회에 인증 정보가 없으면 null 사용자 ID로 호출한다")
+    void getPostDetail_withoutPrincipal_passesNull() throws Exception {
+        PostResult result = samplePostResult(5L, "상세-비로그인");
+        given(postService.getPost(any(), isNull(), eq(5L)))
+            .willReturn(result);
+
+        mockMvc.perform(get("/posts/{id}", 5L))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.id").value(5));
+
+        verify(postService).getPost(any(), isNull(), eq(5L));
+   }
 
     @Test
     @DisplayName("게시글 수정은 인증된 사용자 ID로 위임된다")
@@ -163,15 +191,6 @@ class PostControllerTest {
             .commentCount(0)
             .viewCount(0)
             .createdAt(LocalDateTime.now())
-            .build();
-    }
-
-    private User sampleUser(Long id) {
-        return User.builder()
-            .id(id)
-            .email("user" + id + "@test.com")
-            .nickname("user" + id)
-            .password("pw")
             .build();
     }
 }

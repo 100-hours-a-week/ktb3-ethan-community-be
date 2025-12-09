@@ -1,19 +1,23 @@
 package org.restapi.springrestapi.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
+
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.restapi.springrestapi.dto.user.ChangePasswordRequest;
 import org.restapi.springrestapi.dto.user.PatchProfileRequest;
 import org.restapi.springrestapi.dto.user.UserProfileResult;
-import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.security.CustomUserDetails;
 import org.restapi.springrestapi.security.config.SecurityConfig;
+import org.restapi.springrestapi.security.jwt.JwtFilter;
 import org.restapi.springrestapi.security.jwt.JwtProvider;
 import org.restapi.springrestapi.service.UserService;
+import org.restapi.springrestapi.support.fixture.UserFixture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -26,6 +30,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -43,15 +48,24 @@ class UserControllerTest {
 
     @MockitoBean UserService userService;
     @MockitoBean JwtProvider jwtProvider;
-    @MockitoBean CorsConfigurationSource corsConfigurationSource;
+    @MockitoBean JwtFilter jwtFilter;
 
     CustomUserDetails principal;
 
     @BeforeEach
-    void setUp() {
-        principal = new CustomUserDetails(sampleUser(1L));
+    void setUp() throws Exception {
+        principal = new CustomUserDetails(UserFixture.persistedUser(1L));
         given(jwtProvider.resolveAccessToken(any(HttpServletRequest.class))).willReturn(Optional.empty());
         given(jwtProvider.resolveRefreshToken(any(HttpServletRequest.class))).willReturn(Optional.empty());
+
+        doAnswer(invocation -> {
+            HttpServletRequest req = invocation.getArgument(0);
+            HttpServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+
+            chain.doFilter(req, res);
+            return null;
+        }).when(jwtFilter).doFilter(any(), any(), any());
     }
 
     @Test
@@ -110,12 +124,4 @@ class UserControllerTest {
         verify(userService).deleteUser(principal.getId());
     }
 
-    private User sampleUser(Long id) {
-        return User.builder()
-            .id(id)
-            .email("user" + id + "@test.com")
-            .nickname("user" + id)
-            .password("pw")
-            .build();
-    }
 }

@@ -1,6 +1,10 @@
 package org.restapi.springrestapi.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -8,24 +12,23 @@ import org.restapi.springrestapi.dto.comment.CommentListResult;
 import org.restapi.springrestapi.dto.comment.CommentResult;
 import org.restapi.springrestapi.dto.comment.CreateCommentRequest;
 import org.restapi.springrestapi.dto.comment.PatchCommentRequest;
-import org.restapi.springrestapi.model.User;
 import org.restapi.springrestapi.security.CustomUserDetails;
-import jakarta.servlet.http.HttpServletRequest;
-import java.util.Optional;
 import org.restapi.springrestapi.security.config.SecurityConfig;
+import org.restapi.springrestapi.security.jwt.JwtFilter;
 import org.restapi.springrestapi.security.jwt.JwtProvider;
 import org.restapi.springrestapi.service.CommentService;
-import org.springframework.context.annotation.Import;
+import org.restapi.springrestapi.support.fixture.UserFixture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.cors.CorsConfigurationSource;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -35,7 +38,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(CommentController.class) // 필터 제외 옵션 제거!
+@WebMvcTest(CommentController.class)
 @Import(SecurityConfig.class)
 class CommentControllerTest {
 
@@ -44,16 +47,26 @@ class CommentControllerTest {
 
     @MockitoBean CommentService commentService;
     @MockitoBean JwtProvider jwtProvider;
-    @MockitoBean CorsConfigurationSource corsConfigurationSource;
+    @MockitoBean JwtFilter jwtFilter;
+
 
     CustomUserDetails principal;
     final long POST_ID = 1L, COMMENT_ID = 1L;
 
     @BeforeEach
-    void setUp() {
-        principal = new CustomUserDetails(sampleUser(1L));
+    void setUp() throws Exception {
+        principal = new CustomUserDetails(UserFixture.persistedUser().toBuilder().id(1L).build());
         given(jwtProvider.resolveAccessToken(any(HttpServletRequest.class))).willReturn(Optional.empty());
         given(jwtProvider.resolveRefreshToken(any(HttpServletRequest.class))).willReturn(Optional.empty());
+
+        doAnswer(invocation -> {
+            HttpServletRequest req = invocation.getArgument(0);
+            HttpServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+
+            chain.doFilter(req, res);
+            return null;
+        }).when(jwtFilter).doFilter(any(), any(), any());
     }
 
     @Test
@@ -146,14 +159,5 @@ class CommentControllerTest {
 
         // then
         verify(commentService).deleteComment(principal.getId(), POST_ID, COMMENT_ID);
-    }
-
-    private User sampleUser(Long id) {
-        return User.builder()
-                .id(id)
-                .email("user" + id + "@test.com")
-                .nickname("user" + id)
-                .password("pw")
-                .build();
     }
 }
