@@ -32,7 +32,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestPropertySource(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
 class PostFetchStrategyBenchmarkTest {
 
-    private static final int PAGE_SIZE = 100;
+    private static final int PAGE_SIZE = 30;
+    private static final int REPEAT = 100;
 
     @Autowired PostRepository postRepository;
     @Autowired UserRepository userRepository;
@@ -123,11 +124,11 @@ class PostFetchStrategyBenchmarkTest {
 
     private void seedPosts(IntUnaryOperator authorCountSupplier) {
         List<User> authors = new ArrayList<>();
-        int totalAuthors = authorCountSupplier.applyAsInt(PAGE_SIZE);
+        int totalAuthors = authorCountSupplier.applyAsInt(PAGE_SIZE * REPEAT);
         for (int i = 0; i < Math.max(totalAuthors, 1); i++) {
             authors.add(userRepository.save(UserFixture.uniqueUser("bench-" + i)));
         }
-        for (int i = 0; i < PAGE_SIZE * 5; i++) {
+        for (int i = 0; i < PAGE_SIZE * REPEAT; ++i) {
             User author = authors.get(i % authors.size());
             Post post = Post.builder()
                 .title("벤치마크 제목 " + i)
@@ -147,7 +148,7 @@ class PostFetchStrategyBenchmarkTest {
     }
 
     private void compareStrategies() {
-        BenchmarkResult lazy = runBenchmark("지연 로딩(N+1)", () -> postRepository.findSliceWithoutFetch(PageRequest.of(0, PAGE_SIZE))
+        BenchmarkResult lazy = runBenchmark("Lazy Loading", () -> postRepository.findSliceWithoutFetch(PageRequest.of(0, PAGE_SIZE))
             .getContent()
             .forEach(post -> post.getAuthor().getNickname()));
 
@@ -164,9 +165,9 @@ class PostFetchStrategyBenchmarkTest {
             .getContent()
             .forEach(PostSummaryProjection::postId));
 
-        assertThat(lazy.sqlCount()).isGreaterThan(fetchJoin.sqlCount());
-        assertThat(lazy.sqlCount()).isGreaterThan(entityGraph.sqlCount());
-        assertThat(lazy.sqlCount()).isGreaterThan(projection.sqlCount());
+        assertThat(lazy.totalSqlCount()).isGreaterThan(fetchJoin.totalSqlCount());
+        assertThat(lazy.totalSqlCount()).isGreaterThan(entityGraph.totalSqlCount());
+        assertThat(lazy.totalSqlCount()).isGreaterThan(projection.totalSqlCount());
 
         printResult(lazy);
         printResult(fetchJoin);
@@ -179,30 +180,52 @@ class PostFetchStrategyBenchmarkTest {
         Statistics statistics = sessionFactory.getStatistics();
         statistics.clear();
 
-        long start = System.nanoTime();
-        action.run();
-        long elapsedNs = System.nanoTime() - start;
+        long totalElapsedNs = 0L;
+        for (int i = 0; i < REPEAT; i++) {
+            entityManager.clear();
+            long start = System.nanoTime();
+            action.run();
+            totalElapsedNs += System.nanoTime() - start;
+        }
+
+        long totalElapsedMs = TimeUnit.NANOSECONDS.toMillis(totalElapsedNs);
+        long totalSqlCount = statistics.getPrepareStatementCount();
 
         return new BenchmarkResult(
             label,
-            TimeUnit.NANOSECONDS.toMillis(elapsedNs),
-            statistics.getPrepareStatementCount()
+            totalElapsedMs,
+            totalElapsedMs / (double) REPEAT,
+            totalSqlCount,
+            totalSqlCount / (double) REPEAT
         );
     }
 
     private void printResult(BenchmarkResult result) {
-        System.out.println("==============================================================");
-        System.out.printf("| %-20s | %10s | %10s |\n", "Strategy Name", "Time (ms)", "Query Count");
-        System.out.println("--------------------------------------------------------------");
+        System.out.println("====================================================================================");
+        System.out.printf("| %-20s | %12s | %12s | %12s | %12s |\n",
+            "Strategy Name",
+            "Total Time",
+            "Avg Time",
+            "Total SQL",
+            "Avg SQL");
+        System.out.println("------------------------------------------------------------------------------------");
 
-        System.out.printf("| %-20s | %7d ms | %7d ea |\n",
+        System.out.printf("| %-20s | %9d ms | %9.2f ms | %9d ea | %9.2f ea |\n",
                 result.label(),
-                result.elapsedMs(),
-                result.sqlCount()
+                result.totalElapsedMs(),
+                result.averageElapsedMs(),
+                result.totalSqlCount(),
+                result.averageSqlCount()
         );
 
-        System.out.println("==============================================================");
+        System.out.println("====================================================================================");
     }
 
-    private record BenchmarkResult(String label, long elapsedMs, long sqlCount) {}
+    private record BenchmarkResult(
+        String label,
+        long totalElapsedMs,
+        double averageElapsedMs,
+        long totalSqlCount,
+        double averageSqlCount
+    ) { }
 }
