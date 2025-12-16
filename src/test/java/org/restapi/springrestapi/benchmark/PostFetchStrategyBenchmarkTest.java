@@ -39,7 +39,7 @@ class PostFetchStrategyBenchmarkTest extends AbstractFetchStrategyBenchmarkTest 
     @DisplayName("게시글 작성자와 게시글이 1:1인 경우")
     void compareStrategies_oneToOne() {
         seedPosts(authorCount -> authorCount);
-        runStrategies(provideStrategies());
+        runStrategies(provideStrategies()).forEach(this::printResult);
         /*
         =====================================================================
         | Strategy Name        |   Total Time |    Total SQL |      Avg SQL |
@@ -68,7 +68,7 @@ class PostFetchStrategyBenchmarkTest extends AbstractFetchStrategyBenchmarkTest 
     @DisplayName("1명의 사용자가 5개의 게시글을 작성할 때")
     void compareStrategies_sharedAuthor() {
         seedPosts(authorCount -> authorCount / 6);
-        runStrategies(provideStrategies());
+        runStrategies(provideStrategies()).forEach(this::printResult);
         /*
         =====================================================================
         | Strategy Name        |   Total Time |    Total SQL |      Avg SQL |

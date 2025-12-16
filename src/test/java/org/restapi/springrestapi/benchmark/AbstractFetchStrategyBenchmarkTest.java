@@ -20,11 +20,9 @@ public abstract class AbstractFetchStrategyBenchmarkTest {
     protected EntityManagerFactory entityManagerFactory;
 
     protected List<BenchmarkResult> runStrategies(List<BenchmarkStrategy> strategies) {
-        List<BenchmarkResult> results = strategies.stream()
-            .map(this::runBenchmark)
-            .toList();
-        results.forEach(this::printResult);
-        return results;
+        return strategies.stream()
+			.map(this::runBenchmark)
+			.toList();
     }
 
     private BenchmarkResult runBenchmark(BenchmarkStrategy strategy) {
@@ -51,7 +49,7 @@ public abstract class AbstractFetchStrategyBenchmarkTest {
         );
     }
 
-    private void printResult(BenchmarkResult result) {
+	protected void printResult(BenchmarkResult result) {
         System.out.println("=====================================================================");
         System.out.printf("| %-20s | %12s | %12s | %12s |\n",
             "Strategy Name",
@@ -78,11 +76,4 @@ public abstract class AbstractFetchStrategyBenchmarkTest {
     ) { }
 
     protected record BenchmarkStrategy(String label, Runnable action) { }
-
-    protected BenchmarkResult findResultByLabel(List<BenchmarkResult> results, String label) {
-        return results.stream()
-            .filter(result -> result.label().equals(label))
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("Benchmark result not found for: " + label));
-    }
 }
