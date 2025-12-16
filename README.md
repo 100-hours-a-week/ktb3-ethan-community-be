@@ -94,3 +94,26 @@
 | ![](/public/ori.png) | ![](/public/opt.png) |
 
 최적화를 통해 전체 테스트 시간이 평균 **4.308s → 3.469s**로 감소했으며, FIRST 원칙에 근접한 테스트 환경을 갖추는데 기여했습니다.
+
+---
+## N + 1 문제 해결 방안 비교 및 분석
+
+### 벤치마크 요약
+두 벤치마크는 `PageRequest.of(0, PAGE_SIZE)`로 30개 분량을 조회하는 조건을 100회 반복(= `REPEAT = 100`)하여 Hibernate Statistics를 기록합니다. 측정 전략은 Lazy Loading(기본 설정)과 Fetch Join, EntityGraph, DTO Projection입니다. 
+
+| 상황 | 전략 | 총 실행 시간 (100회) | 총 SQL 횟수 | 평균 SQL | 비고                   |
+|---------|----------------|---------------------|-------------|----------|----------------------|
+| Post (1:1 작성자) | Lazy Loading | 393ms | 3,100 | 31.00 | 게시글마다 작성자를 추가 조회     |
+| Post (1:1 작성자) | Fetch Join | 66ms | 100 | 1.00 | 한 번의 JOIN으로 모든 관계 조회 |
+| Post (1:1 작성자) | EntityGraph | 108ms | 100 | 1.00 | JPA 그래프의 반복 호출 효과    |
+| Post (1:1 작성자) | DTO Projection | 27ms | 100 | 1.00 | DTO만 로드, 영속화 없이 빠름   |
+| Post (공유 작성자) | Lazy Loading | 58ms | 600 | 6.00 | 5명의 작성자가 순환될 때도 N+1  |
+| Post (공유 작성자) | Fetch Join | 34ms | 100 | 1.00 | 작성자 재사용에도 관계 조회 1회   |
+| Post (공유 작성자) | EntityGraph | 71ms | 100 | 1.00 |                      |
+| Post (공유 작성자) | DTO Projection | 13ms | 100 | 1.00 |                      |
+| Comment (3명 × 10개) | Lazy Loading | 223ms | 400 | 4.00 | 3명의 댓글러가 반복          |
+| Comment (3명 × 10개) | Fetch Join | 87ms | 100 | 1.00 |                      |
+| Comment (3명 × 10개) | EntityGraph | 135ms | 100 | 1.00 |                      |
+| Comment (3명 × 10개) | DTO Projection | 40ms | 100 | 1.00 |                      |
+
+**참고**: Post(1:1)과 Post(공유) 시나리오에서 `total SQL = 100`인 이유는 `REPEAT = 100`이기 때문에 Fetch Join/EntityGraph/Projection이 반복 호출마다 1회만 실행되었음을 의미합니다. Lazy는 각 Post마다 작성자(`User`)를 다시 호출하므로 총 SQL이 올라갑니다.
