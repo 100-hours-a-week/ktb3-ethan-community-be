@@ -1,17 +1,11 @@
 package org.restapi.springrestapi.benchmark;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.IntUnaryOperator;
-import org.hibernate.SessionFactory;
-import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.restapi.springrestapi.dto.post.PostSummaryProjection;
 import org.restapi.springrestapi.model.Post;
@@ -25,110 +19,87 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @DataJpaTest
 @ActiveProfiles("test")
 @TestPropertySource(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
-class PostFetchStrategyBenchmarkTest {
-
-    private static final int PAGE_SIZE = 30;
-    private static final int REPEAT = 100;
+class PostFetchStrategyBenchmarkTest extends AbstractFetchStrategyBenchmarkTest {
 
     @Autowired PostRepository postRepository;
     @Autowired UserRepository userRepository;
-    @Autowired EntityManager entityManager;
-    @Autowired EntityManagerFactory entityManagerFactory;
 
     @BeforeEach
-    void clear() {
+    void clearDatabase() {
         postRepository.deleteAll();
         userRepository.deleteAll();
         entityManager.flush();
         entityManager.clear();
     }
 
-    @Nested
-    @DisplayName("게시글과 사용자가 1:1인 경우")
-    class OneToOneAuthor {
-        @BeforeEach
-        void setUpData() {
-            seedPosts(authorCount -> authorCount);
-        }
-
-        @Test
-        @DisplayName("전략별 SQL 수 비교")
-        void compareStrategies_oneToOne() {
-            compareStrategies();
-        }
+    @Test
+    @DisplayName("게시글 작성자와 게시글이 1:1인 경우")
+    void compareStrategies_oneToOne() {
+        seedPosts(authorCount -> authorCount);
+        runStrategies(provideStrategies());
         /*
-        ==============================================================
-        | Strategy Name        |  Time (ms) | Query Count |
-        --------------------------------------------------------------
-        | 지연 로딩(N+1)           |    1135 ms |   10001 ea |
-        ==============================================================
-        ==============================================================
-        | Strategy Name        |  Time (ms) | Query Count |
-        --------------------------------------------------------------
-        | Fetch Join           |      82 ms |       1 ea |
-        ==============================================================
-        ==============================================================
-        | Strategy Name        |  Time (ms) | Query Count |
-        --------------------------------------------------------------
-        | EntityGraph          |      73 ms |       1 ea |
-        ==============================================================
-        ==============================================================
-        | Strategy Name        |  Time (ms) | Query Count |
-        --------------------------------------------------------------
-        | DTO Projection       |      65 ms |       1 ea |
-        ==============================================================
+        =====================================================================
+        | Strategy Name        |   Total Time |    Total SQL |      Avg SQL |
+        ---------------------------------------------------------------------
+        | Lazy Loading         |       393 ms |      3100 ea |     31.00 ea |
+        =====================================================================
+        =====================================================================
+        | Strategy Name        |   Total Time |    Total SQL |      Avg SQL |
+        ---------------------------------------------------------------------
+        | Fetch Join           |        66 ms |       100 ea |      1.00 ea |
+        =====================================================================
+        =====================================================================
+        | Strategy Name        |   Total Time |    Total SQL |      Avg SQL |
+        ---------------------------------------------------------------------
+        | EntityGraph          |       108 ms |       100 ea |      1.00 ea |
+        =====================================================================
+        =====================================================================
+        | Strategy Name        |   Total Time |    Total SQL |      Avg SQL |
+        ---------------------------------------------------------------------
+        | DTO Projection       |        27 ms |       100 ea |      1.00 ea |
+        =====================================================================
          */
     }
 
-    @Nested
-    @DisplayName("한 사용자가 여러 게시글을 가진 경우")
-    class SharedAuthor {
-        @BeforeEach
-        void setUpData() {
-            seedPosts(authorCount -> authorCount / 5);
-        }
-
-        @Test
-        @DisplayName("전략별 SQL 수 비교(작성자 재사용)")
-        void compareStrategies_sharedAuthor() {
-            compareStrategies();
-        }
+    @Test
+    @DisplayName("1명의 사용자가 5개의 게시글을 작성할 때")
+    void compareStrategies_sharedAuthor() {
+        seedPosts(authorCount -> authorCount / 6);
+        runStrategies(provideStrategies());
         /*
-        ==============================================================
-        | Strategy Name        |  Time (ms) | Query Count |
-        --------------------------------------------------------------
-        | 지연 로딩(N+1)           |     505 ms |    2001 ea |
-        ==============================================================
-        ==============================================================
-        | Strategy Name        |  Time (ms) | Query Count |
-        --------------------------------------------------------------
-        | Fetch Join           |     388 ms |       1 ea |
-        ==============================================================
-        ==============================================================
-        | Strategy Name        |  Time (ms) | Query Count |
-        --------------------------------------------------------------
-        | EntityGraph          |     169 ms |       1 ea |
-        ==============================================================
-        ==============================================================
-        | Strategy Name        |  Time (ms) | Query Count |
-        --------------------------------------------------------------
-        | DTO Projection       |     133 ms |       1 ea |
-        ==============================================================
+        =====================================================================
+        | Strategy Name        |   Total Time |    Total SQL |      Avg SQL |
+        ---------------------------------------------------------------------
+        | Lazy Loading         |        58 ms |       600 ea |      6.00 ea |
+        =====================================================================
+        =====================================================================
+        | Strategy Name        |   Total Time |    Total SQL |      Avg SQL |
+        ---------------------------------------------------------------------
+        | Fetch Join           |        34 ms |       100 ea |      1.00 ea |
+        =====================================================================
+        =====================================================================
+        | Strategy Name        |   Total Time |    Total SQL |      Avg SQL |
+        ---------------------------------------------------------------------
+        | EntityGraph          |        71 ms |       100 ea |      1.00 ea |
+        =====================================================================
+        =====================================================================
+        | Strategy Name        |   Total Time |    Total SQL |      Avg SQL |
+        ---------------------------------------------------------------------
+        | DTO Projection       |        13 ms |       100 ea |      1.00 ea |
+        =====================================================================
          */
     }
 
     private void seedPosts(IntUnaryOperator authorCountSupplier) {
         List<User> authors = new ArrayList<>();
-        int totalAuthors = authorCountSupplier.applyAsInt(PAGE_SIZE * REPEAT);
+        final int totalAuthors = authorCountSupplier.applyAsInt(PAGE_SIZE);
         for (int i = 0; i < Math.max(totalAuthors, 1); i++) {
             authors.add(userRepository.save(UserFixture.uniqueUser("bench-" + i)));
         }
-        for (int i = 0; i < PAGE_SIZE * REPEAT; ++i) {
+        for (int i = 0; i < PAGE_SIZE; ++i) {
             User author = authors.get(i % authors.size());
             Post post = Post.builder()
                 .title("벤치마크 제목 " + i)
@@ -147,85 +118,21 @@ class PostFetchStrategyBenchmarkTest {
         entityManager.clear();
     }
 
-    private void compareStrategies() {
-        BenchmarkResult lazy = runBenchmark("Lazy Loading", () -> postRepository.findSliceWithoutFetch(PageRequest.of(0, PAGE_SIZE))
-            .getContent()
-            .forEach(post -> post.getAuthor().getNickname()));
-
-        BenchmarkResult fetchJoin = runBenchmark("Fetch Join", () -> {
-            List<Post> posts = postRepository.findSliceWithFetchJoin(PageRequest.of(0, PAGE_SIZE));
-            posts.forEach(post -> post.getAuthor().getNickname());
-        });
-
-        BenchmarkResult entityGraph = runBenchmark("EntityGraph", () -> postRepository.findSliceWithEntityGraph(PageRequest.of(0, PAGE_SIZE))
-            .getContent()
-            .forEach(post -> post.getAuthor().getNickname()));
-
-        BenchmarkResult projection = runBenchmark("DTO Projection", () -> postRepository.findSliceWithProjection(PageRequest.of(0, PAGE_SIZE))
-            .getContent()
-            .forEach(PostSummaryProjection::postId));
-
-        assertThat(lazy.totalSqlCount()).isGreaterThan(fetchJoin.totalSqlCount());
-        assertThat(lazy.totalSqlCount()).isGreaterThan(entityGraph.totalSqlCount());
-        assertThat(lazy.totalSqlCount()).isGreaterThan(projection.totalSqlCount());
-
-        printResult(lazy);
-        printResult(fetchJoin);
-        printResult(entityGraph);
-        printResult(projection);
-    }
-
-    private BenchmarkResult runBenchmark(String label, Runnable action) {
-        SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
-        Statistics statistics = sessionFactory.getStatistics();
-        statistics.clear();
-
-        long totalElapsedNs = 0L;
-        for (int i = 0; i < REPEAT; i++) {
-            entityManager.clear();
-            long start = System.nanoTime();
-            action.run();
-            totalElapsedNs += System.nanoTime() - start;
-        }
-
-        long totalElapsedMs = TimeUnit.NANOSECONDS.toMillis(totalElapsedNs);
-        long totalSqlCount = statistics.getPrepareStatementCount();
-
-        return new BenchmarkResult(
-            label,
-            totalElapsedMs,
-            totalElapsedMs / (double) REPEAT,
-            totalSqlCount,
-            totalSqlCount / (double) REPEAT
+    private List<BenchmarkStrategy> provideStrategies() {
+        return List.of(
+            new BenchmarkStrategy("Lazy Loading", () -> postRepository.findSliceWithoutLazy(PageRequest.of(0, PAGE_SIZE))
+                .getContent()
+                .forEach(post -> post.getAuthor().getNickname())),
+            new BenchmarkStrategy("Fetch Join", () -> {
+                List<Post> posts = postRepository.findSliceWithFetchJoin(PageRequest.of(0, PAGE_SIZE));
+                posts.forEach(post -> post.getAuthor().getNickname());
+            }),
+            new BenchmarkStrategy("EntityGraph", () -> postRepository.findSliceWithEntityGraph(PageRequest.of(0, PAGE_SIZE))
+                .getContent()
+                .forEach(post -> post.getAuthor().getNickname())),
+            new BenchmarkStrategy("DTO Projection", () -> postRepository.findSliceWithProjection(PageRequest.of(0, PAGE_SIZE))
+                .getContent()
+                .forEach(PostSummaryProjection::postId))
         );
     }
-
-    private void printResult(BenchmarkResult result) {
-        System.out.println("====================================================================================");
-        System.out.printf("| %-20s | %12s | %12s | %12s | %12s |\n",
-            "Strategy Name",
-            "Total Time",
-            "Avg Time",
-            "Total SQL",
-            "Avg SQL");
-        System.out.println("------------------------------------------------------------------------------------");
-
-        System.out.printf("| %-20s | %9d ms | %9.2f ms | %9d ea | %9.2f ea |\n",
-                result.label(),
-                result.totalElapsedMs(),
-                result.averageElapsedMs(),
-                result.totalSqlCount(),
-                result.averageSqlCount()
-        );
-
-        System.out.println("====================================================================================");
-    }
-
-    private record BenchmarkResult(
-        String label,
-        long totalElapsedMs,
-        double averageElapsedMs,
-        long totalSqlCount,
-        double averageSqlCount
-    ) { }
 }

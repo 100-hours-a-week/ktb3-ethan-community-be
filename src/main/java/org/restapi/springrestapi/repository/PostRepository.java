@@ -66,9 +66,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
         FROM Post p
         ORDER BY p.id DESC
     """)
-    Slice<Post> findSliceWithoutFetch(Pageable pageable);
+    Slice<Post> findSliceWithoutLazy(Pageable pageable);
 
-    // Fetch Join으로 한 번에 author 로딩
+    // Fetch Join으로 연관 엔티티(author) 로딩
     @Query("""
         SELECT p
         FROM Post p
