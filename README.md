@@ -98,22 +98,45 @@
 ---
 ## N + 1 문제 해결 방안 비교 및 분석
 
-### 벤치마크 요약
-두 벤치마크는 `PageRequest.of(0, PAGE_SIZE)`로 30개 분량을 조회하는 조건을 100회 반복(= `REPEAT = 100`)하여 Hibernate Statistics를 기록합니다. 측정 전략은 Lazy Loading(기본 설정)과 Fetch Join, EntityGraph, DTO Projection입니다. 
+### 게시글 벤치마크(PostFetchStrategyBenchmarkTest)
+본 벤치마크는 `PageRequest.of(0, PAGE_SIZE)`를 사용해 게시글 30개를 조회한 뒤, 작성자 연관 엔티티 접근 시 Hibernate Statistics를 기록합니다.
+비교 대상은 Lazy Loading(기본 설정), Fetch Join, EntityGraph, DTO Projection입니다.
 
-| 상황 | 전략 | 총 실행 시간 (100회) | 총 SQL 횟수 | 평균 SQL | 비고                   |
-|---------|----------------|---------------------|-------------|----------|----------------------|
-| Post (1:1 작성자) | Lazy Loading | 393ms | 3,100 | 31.00 | 게시글마다 작성자를 추가 조회     |
-| Post (1:1 작성자) | Fetch Join | 66ms | 100 | 1.00 | 한 번의 JOIN으로 모든 관계 조회 |
-| Post (1:1 작성자) | EntityGraph | 108ms | 100 | 1.00 | JPA 그래프의 반복 호출 효과    |
-| Post (1:1 작성자) | DTO Projection | 27ms | 100 | 1.00 | DTO만 로드, 영속화 없이 빠름   |
-| Post (공유 작성자) | Lazy Loading | 58ms | 600 | 6.00 | 5명의 작성자가 순환될 때도 N+1  |
-| Post (공유 작성자) | Fetch Join | 34ms | 100 | 1.00 | 작성자 재사용에도 관계 조회 1회   |
-| Post (공유 작성자) | EntityGraph | 71ms | 100 | 1.00 |                      |
-| Post (공유 작성자) | DTO Projection | 13ms | 100 | 1.00 |                      |
-| Comment (3명 × 10개) | Lazy Loading | 223ms | 400 | 4.00 | 3명의 댓글러가 반복          |
-| Comment (3명 × 10개) | Fetch Join | 87ms | 100 | 1.00 |                      |
-| Comment (3명 × 10개) | EntityGraph | 135ms | 100 | 1.00 |                      |
-| Comment (3명 × 10개) | DTO Projection | 40ms | 100 | 1.00 |                      |
+단일 실행에 따른 편차를 줄이기 위해, 각 조회 전략을 100회 반복 실행(REPEAT = 100)하고 그에 따른 총 실행 시간을 측정했습니다.
 
-**참고**: Post(1:1)과 Post(공유) 시나리오에서 `total SQL = 100`인 이유는 `REPEAT = 100`이기 때문에 Fetch Join/EntityGraph/Projection이 반복 호출마다 1회만 실행되었음을 의미합니다. Lazy는 각 Post마다 작성자(`User`)를 다시 호출하므로 총 SQL이 올라갑니다.
+본 실험은 게시글 30개 조회 시 작성자 분포에 따라 N + 1 문제의 양상이 어떻게 달라지는지, 그리고 영속성 컨텍스트의 1차 캐시가 Lazy Loading에 어떤 영향을 미치는지를 확인하기 위한 목적을 가집니다.  
+이를 위해 아래와 같은 상황에서 측정을 수행했습니다.  
+- 1명의 작성자가 1개의 게시글을 작성한 경우
+- 1명의 작성자가 5개의 게시글을 작성한 경우
+
+|                | 작성자 1명 * 게시글 1개 | 작성자 1명 * 게시글 5개 | 평균 SQL | 비고                                                                     |
+|----------------|-----------------------|-----------------|----------|------------------------------------------------------------------------|
+| Lazy Loading   | 393ms| 58ms| 31 → 6   | 게시글의 작성자가 동일한 경우, 영속성 컨텍스트의 1차 캐시에 <br/>이미 로드된 엔티티가 존재하여 추가 쿼리가 감소합니다. |
+| Fetch Join     | 66ms| 34ms| 1        | 한 번의 JOIN으로 모든 관계 조회                                                   |
+| EntityGraph    | 108ms| 71ms| 1        | JPA 그래프의 반복 호출 효과                                                      |
+| DTO Projection | 27ms| 13ms| 1        | DTO만 로드, 영속화 없이 빠름                                                     |
+
+Lazy Loading은 여전히 게시글 수에 비례해 추가 쿼리가 발생하는 N + 1 문제가 존재하지만, 작성자가 동일한 경우에는 영속성 컨텍스트의 1차 캐시에 의해 작성자 조회 쿼리가 재사용되어 쿼리 수가 감소하는 것을 확인할 수 있습니다.
+
+Fetch Join과 EntityGraph는 작성자 분포와 무관하게 단일 쿼리를 유지하며, 조회 시간 감소는 작성자 수 감소로 인해 JOIN 결과 row 수와 조회 데이터 양이 줄어든 영향으로 해석됩니다.
+
+DTO Projection은 영속성 컨텍스트와 무관하지만, 동일 작성자로 인해 DB에서 반환되는 데이터량이 감소하면서 결과적으로 조회 시간이 더 줄어드는 것으로 해석됩니다.
+
+
+### 댓글 벤치마크(CommentFetchStrategyBenchmarkTest)
+
+본 벤치마크는 `PageRequest.of(0, PAGE_SIZE)`를 사용해 댓글 30개를 조회한 뒤, 작성자 연관 엔티티 접근 시 Hibernate Statistics를 기록합니다.
+비교 대상은 Lazy Loading(기본 설정), Fetch Join, EntityGraph, DTO Projection입니다.
+
+단일 실행에 따른 편차를 줄이기 위해, 각 조회 전략을 100회 반복 실행(REPEAT = 100)하고 그에 따른 총 실행 시간을 측정했습니다.
+
+본 실험은 게시글과 댓글 조회 간 작성자 분포에 따라 N + 1 문제의 양상이 어떻게 달라지는지, 그리고 영속성 컨텍스트의 1차 캐시가 Lazy Loading에 어떤 영향을 미치는지를 확인하기 위한 목적을 가집니다.
+
+1명의 작성자가 10개의 댓글을 작성한 경우에 대한 측정 결과입니다.
+
+| 전략| 총 실행 시간 | 평균 SQL | 
+|----------------|-------|----------|
+| Lazy Loading   | 223ms | 4.00 |
+| Fetch Join     | 87ms | 1.00 |
+| EntityGraph    | 135ms | 1.00 |
+| DTO Projection | 40ms | 1.00 |

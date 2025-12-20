@@ -43,7 +43,7 @@ class CommentFetchStrategyBenchmarkTest extends AbstractFetchStrategyBenchmarkTe
     @Test
     @DisplayName("1명의 사용자가 10개의 댓글을 작성할 때")
     void compareStrategies_comments() {
-        runStrategies(provideStrategies());
+        runStrategies(provideStrategies()).forEach(this::printResult);
         /*
         =====================================================================
         | Strategy Name        |   Total Time |    Total SQL |      Avg SQL |
